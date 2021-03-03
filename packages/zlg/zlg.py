@@ -142,11 +142,31 @@ def _construct_ul(L, labeled, unlabeled):
     return ul
 
 
-def _rearrange_laplacian_matrix(L, labeled):
+# tested
+def _rearrange_laplacian_matrix(L, labeled, unlabeled):
     """
+    Rearranges the cells of the matrix by grouping labeled and unlabeled instances together in a specific pattern.
 
-    :param L: Laplacian matrix
+    ll  lu
+    ul  uu
+
+    where
+    - ll are the labeled instances
+    - uu are the unlabeled instances
+    - lu are the pairs of (labeled, unlabeled) instances
+    - ul are the pairs of (unlabeled, labeled) instances
+
+    :param L: n x n matrix
     :param labeled: list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
-    :return:
+    :return: n x n matrix
     """
-    pass
+    # rearrange cells into submatrices
+    ll = _construct_ll(L, labeled)
+    uu = _construct_uu(L, unlabeled)
+    lu = _construct_lu(L, labeled, unlabeled)
+    ul = _construct_ul(L, labeled, unlabeled)
+
+    # combine blocks back together
+    combined = np.block([[ll, lu],
+                         [ul, uu]])
+    return combined

@@ -223,3 +223,19 @@ def test__construct_ul_three_selected_sep():
 
     actual = zlg._construct_ul(L, labeled, unlabeled)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test__rearrange_laplacian_matrix():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 3]  # label instance 1 and 4
+    unlabeled = [1, 2]  # don't label instance 2 and 3
+
+    expected = np.array([[1, 4, 2, 3],
+                         [13, 16, 14, 15],
+                         [5, 8, 6, 7],
+                         [9, 12, 10, 11]])
+    actual = zlg._rearrange_laplacian_matrix(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
