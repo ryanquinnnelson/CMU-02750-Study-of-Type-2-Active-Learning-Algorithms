@@ -35,3 +35,81 @@ def test__construct_laplacian_matrix():
     expected = np.array([[2, -2], [-3, 3]])
     actual = zlg._construct_laplacian_matrix(D, W)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ll_two_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 3]  # select instance 1 and 4
+    expected = np.array([[1, 4],
+                         [13, 16]])
+
+    actual = zlg._construct_ll(L, labeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ll_three_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [1, 2, 3]  # select instance 2,3,4
+    expected = np.array([[6, 7, 8],
+                         [10, 11, 12],
+                         [14, 15, 16]])
+
+    actual = zlg._construct_ll(L, labeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ll_one_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0]  # select instance 1
+    expected = np.array([[1]])
+
+    actual = zlg._construct_ll(L, labeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_uu_two_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    unlabeled = [0, 3]  # select instance 1 and 4
+    expected = np.array([[1, 4],
+                         [13, 16]])
+
+    actual = zlg._construct_ll(L, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_uu_three_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    unlabeled = [1, 2, 3]  # select instance 2,3,4
+    expected = np.array([[6, 7, 8],
+                         [10, 11, 12],
+                         [14, 15, 16]])
+
+    actual = zlg._construct_ll(L, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_uu_one_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    unlabeled = [0]  # select instance 1
+    expected = np.array([[1]])
+
+    actual = zlg._construct_ll(L, unlabeled)
+    np.testing.assert_array_equal(actual, expected)

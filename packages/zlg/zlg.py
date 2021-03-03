@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial import distance_matrix
+import itertools
 
 
 # ?? how to calculate variance of X
@@ -25,6 +26,7 @@ def _calculate_weights(X):
 
     return weights
 
+
 # tested
 def _construct_weight_matrix(weights, t):
     """
@@ -35,6 +37,7 @@ def _construct_weight_matrix(weights, t):
     """
     W = np.where(weights >= t, weights, 0.0)
     return W
+
 
 # tested
 def _construct_diagonal_matrix(W):
@@ -52,6 +55,7 @@ def _construct_diagonal_matrix(W):
 
     return D
 
+
 # tested
 def _construct_laplacian_matrix(D,W):
     """
@@ -61,4 +65,70 @@ def _construct_laplacian_matrix(D,W):
     :return: n x n matrix
     """
     return D-W
+
+
+# tested
+def _construct_ll(L, labeled):
+    """
+    Assumes labeled is sorted in ascending order.
+    Assumes labeled list is not empty.
+    :param L:
+    :param labeled:
+    :return:
+    """
+
+    num_labeled = len(labeled)
+
+    # build ll scaffold
+    ll = np.zeros((num_labeled, num_labeled))
+
+    # generate all combinations of labeled indices i.e. (1,2) -> (1,1), (1,2), (2,1), (2,2)
+    for idx1, i in enumerate(labeled):
+        for idx2, j in enumerate(labeled):
+            ll[idx1][idx2] = L[i][j]
+
+    return ll
+
+
+def _construct_uu(L, unlabeled):
+    """
+    Todo - this is the same code as construct_ll(). Combine the two.
+    :param L:
+    :param unlabeled:
+    :return:
+    """
+    num_unlabeled = len(unlabeled)
+
+    # build uu scaffold
+    uu = np.zeros((num_unlabeled, num_unlabeled))
+
+    # generate all combinations of unlabeled indices i.e. (1,2) -> (1,1), (1,2), (2,1), (2,2)
+    for idx1, i in enumerate(unlabeled):
+        for idx2, j in enumerate(unlabeled):
+            uu[idx1][idx2] = L[i][j]
+
+    return uu
+
+
+def _construct_lu(L, labeled, unlabeled):
+    num_labeled = len(labeled)
+    num_unlabeled = len(unlabeled)
+
+    # build
+
+
+
+def _rearrange_laplacian_matrix(L, labeled):
+    """
+
+    :param L: Laplacian matrix
+    :param labeled: list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
+    :return:
+    """
+    pass
+
+
+
+
+
 
