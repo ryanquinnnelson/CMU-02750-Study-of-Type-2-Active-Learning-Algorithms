@@ -85,7 +85,7 @@ def test__construct_uu_two_selected():
     expected = np.array([[1, 4],
                          [13, 16]])
 
-    actual = zlg._construct_ll(L, unlabeled)
+    actual = zlg._construct_uu(L, unlabeled)
     np.testing.assert_array_equal(actual, expected)
 
 
@@ -99,7 +99,7 @@ def test__construct_uu_three_selected():
                          [10, 11, 12],
                          [14, 15, 16]])
 
-    actual = zlg._construct_ll(L, unlabeled)
+    actual = zlg._construct_uu(L, unlabeled)
     np.testing.assert_array_equal(actual, expected)
 
 
@@ -111,5 +111,115 @@ def test__construct_uu_one_selected():
     unlabeled = [0]  # select instance 1
     expected = np.array([[1]])
 
-    actual = zlg._construct_ll(L, unlabeled)
+    actual = zlg._construct_uu(L, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_lu_two_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 3]  # label instance 1 and 4
+    unlabeled = [1, 2]  # don't label instance 2 and 3
+    expected = np.array([[2, 3],
+                         [14, 15]])
+
+    actual = zlg._construct_lu(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_lu_three_selected_together():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [1, 2, 3]  # select instance 2,3,4
+    unlabeled = [0]
+    expected = np.array([[5],
+                         [9],
+                         [13]])
+
+    actual = zlg._construct_lu(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_lu_one_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0]  # select instance 1
+    unlabeled = [1, 2, 3]
+    expected = np.array([[2, 3, 4]])
+
+    actual = zlg._construct_lu(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_lu_three_selected_sep():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 2, 3]  # select instance 1
+    unlabeled = [1]
+    expected = np.array([[2],
+                         [10],
+                         [14]])
+
+    actual = zlg._construct_lu(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ul_two_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 3]  # label instance 1 and 4
+    unlabeled = [1, 2]  # don't label instance 2 and 3
+    expected = np.array([[5, 8],
+                         [9, 12]])
+
+    actual = zlg._construct_ul(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ul_three_selected_together():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 1, 2]  # select instance 2,3,4
+    unlabeled = [3]
+    expected = np.array([[13, 14, 15]])
+
+    actual = zlg._construct_ul(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ul_one_selected():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0]  # select instance 1
+    unlabeled = [1, 2, 3]
+    expected = np.array([[5], [9], [13]])
+
+    actual = zlg._construct_ul(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_ul_three_selected_sep():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 2, 3]  # select instance 1
+    unlabeled = [1]
+    expected = np.array([[5, 7, 8]])
+
+    actual = zlg._construct_ul(L, labeled, unlabeled)
     np.testing.assert_array_equal(actual, expected)

@@ -57,14 +57,14 @@ def _construct_diagonal_matrix(W):
 
 
 # tested
-def _construct_laplacian_matrix(D,W):
+def _construct_laplacian_matrix(D, W):
     """
 
     :param D: n x n diagonal matrix
     :param W: n x n weights matrix
     :return: n x n matrix
     """
-    return D-W
+    return D - W
 
 
 # tested
@@ -90,6 +90,7 @@ def _construct_ll(L, labeled):
     return ll
 
 
+# tested
 def _construct_uu(L, unlabeled):
     """
     Todo - this is the same code as construct_ll(). Combine the two.
@@ -110,12 +111,35 @@ def _construct_uu(L, unlabeled):
     return uu
 
 
+# tested
 def _construct_lu(L, labeled, unlabeled):
     num_labeled = len(labeled)
     num_unlabeled = len(unlabeled)
 
-    # build
+    # build lu scaffold
+    lu = np.zeros((num_labeled, num_unlabeled))
 
+    # generate
+    for idx1, i in enumerate(labeled):
+        for idx2, j in enumerate(unlabeled):
+            lu[idx1][idx2] = L[i][j]
+
+    return lu
+
+
+def _construct_ul(L, labeled, unlabeled):
+    num_labeled = len(labeled)
+    num_unlabeled = len(unlabeled)
+
+    # build ul scaffold
+    ul = np.zeros((num_unlabeled, num_labeled))
+
+    # generate
+    for idx1, i in enumerate(unlabeled):
+        for idx2, j in enumerate(labeled):
+            ul[idx1][idx2] = L[i][j]
+
+    return ul
 
 
 def _rearrange_laplacian_matrix(L, labeled):
@@ -126,9 +150,3 @@ def _rearrange_laplacian_matrix(L, labeled):
     :return:
     """
     pass
-
-
-
-
-
-
