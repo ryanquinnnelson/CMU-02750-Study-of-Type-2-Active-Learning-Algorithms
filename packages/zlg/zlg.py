@@ -72,9 +72,9 @@ def _construct_ll(L, labeled):
     """
     Assumes labeled is sorted in ascending order.
     Assumes labeled list is not empty.
-    :param L:
-    :param labeled:
-    :return:
+    :param L: n x n matrix
+    :param labeled: sorted list of indices of unlabeled instances
+    :return: b x b matrix, where b=len(labeled)
     """
 
     num_labeled = len(labeled)
@@ -94,9 +94,9 @@ def _construct_ll(L, labeled):
 def _construct_uu(L, unlabeled):
     """
     Todo - this is the same code as construct_ll(). Combine the two.
-    :param L:
-    :param unlabeled:
-    :return:
+    :param L: n x n matrix
+    :param unlabeled: sorted list of indices of unlabeled instances
+    :return: a x a matrix, where a=len(unlabeled)
     """
     num_unlabeled = len(unlabeled)
 
@@ -113,6 +113,13 @@ def _construct_uu(L, unlabeled):
 
 # tested
 def _construct_lu(L, labeled, unlabeled):
+    """
+
+    :param L: n x n matrix
+    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
+    :param unlabeled: sorted list of indices of unlabeled instances
+    :return: b x a matrix, where b=len(labeled) and a=len(unlabeled)
+    """
     num_labeled = len(labeled)
     num_unlabeled = len(unlabeled)
 
@@ -127,7 +134,15 @@ def _construct_lu(L, labeled, unlabeled):
     return lu
 
 
+# tested
 def _construct_ul(L, labeled, unlabeled):
+    """
+
+    :param L: n x n matrix
+    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
+    :param unlabeled: sorted list of indices of unlabeled instances
+    :return: a x b matrix, where a=len(unlabeled) and b=len(labeled)
+    """
     num_labeled = len(labeled)
     num_unlabeled = len(unlabeled)
 
@@ -157,10 +172,11 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
     - ul are the pairs of (unlabeled, labeled) instances
 
     :param L: n x n matrix
-    :param labeled: list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
+    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
+    :param unlabeled: sorted list of indices of unlabeled instances
     :return: n x n matrix
     """
-    # rearrange cells into submatrices
+    # rearrange cells into sub-matrices
     ll = _construct_ll(L, labeled)
     uu = _construct_uu(L, unlabeled)
     lu = _construct_lu(L, labeled, unlabeled)
@@ -170,3 +186,26 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
     combined = np.block([[ll, lu],
                          [ul, uu]])
     return combined
+
+
+# tested
+def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
+    """
+    Calculates f_u.
+
+    :param L: n x n matrix
+    :param labeled:
+    :param unlabeled:
+    :param f_l: b x 1 vector of labeled instances, where b=len(labeled)
+    :return: a x 1 vector, where a=len(unlabeled)
+    """
+    # rearrange cells into sub-matrices
+    uu = _construct_uu(L, unlabeled)  # a x a matrix
+    ul = _construct_ul(L, labeled, unlabeled)  # a x b matrix
+
+    # calculate minimum
+    uu_invert = np.linalg.inv(uu)
+    temp = np.matmul(-1.0 * uu_invert, ul)
+    minimum = np.matmul(temp, f_l)
+
+    return minimum
