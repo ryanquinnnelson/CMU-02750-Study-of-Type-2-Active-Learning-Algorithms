@@ -20,3 +20,18 @@ def test__construct_weight_matrix():
     expected = np.array([[0.0, 0.0], [3, 4]])
     actual = zlg._construct_weight_matrix(weights, t)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_diagonal_matrix():
+    weights = np.array([[1, 2], [3, 4]])
+    expected = np.array([[3, 0], [0, 7]])
+    actual = zlg._construct_diagonal_matrix(weights)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__construct_laplacian_matrix():
+    W = np.array([[1, 2], [3, 4]])
+    D = np.array([[3, 0], [0, 7]])
+    expected = np.array([[2, -2], [-3, 3]])
+    actual = zlg._construct_laplacian_matrix(D, W)
+    np.testing.assert_array_equal(actual, expected)
