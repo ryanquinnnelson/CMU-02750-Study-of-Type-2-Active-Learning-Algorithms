@@ -251,19 +251,70 @@ def test__calc_minimum_energy_solution():
     f_l = np.array([[1], [0]])
 
     expected_f_u = np.array([[-2],
-                         [1]])
+                             [1]])
 
-    expected_uu_invert = np.array([[-2.75, 1.75],
-                                   [2.5,-1.5]])
-    actual_f_u, actual_uu_invert = zlg._calc_minimum_energy_solution(L, labeled, unlabeled, f_l)
-    np.testing.assert_allclose(actual_f_u, expected_f_u, atol=1e-16)  # rounding errors cause problems with exact comparison
-    np.testing.assert_allclose(expected_uu_invert, actual_uu_invert, atol=1e-16)
-
-
-
+    expected_uu_inv = np.array([[-2.75, 1.75],
+                                [2.5, -1.5]])
+    actual_f_u, actual_uu_inv = zlg._calc_minimum_energy_solution(L, labeled, unlabeled, f_l)
+    np.testing.assert_allclose(actual_f_u, expected_f_u,
+                               atol=1e-16)  # rounding errors cause problems with exact comparison
+    np.testing.assert_allclose(expected_uu_inv, actual_uu_inv, atol=1e-16)
 
 
+def test__add_point_to_f_u():
+    f_u = np.array([[-2],
+                    [1]])
+
+    uu_inv = np.array([[-2, 1],
+                       [2, -1]])
+    k = 0
+    y_k = 1
+
+    expected = np.array([[1],
+                         [-2]])
+    actual = zlg._add_point_to_f_u(f_u, uu_inv, k, y_k)
+    np.testing.assert_array_equal(actual, expected)
 
 
+def test__expected_risk():
+    f_u = np.array([[-2],
+                    [1]])
+
+    expected = -2.0
+    actual = zlg._expected_risk(f_u)
+    assert actual == expected
 
 
+def test__expected_estimated_risk():
+    f_u = np.array([[-2],
+                    [1]])
+
+    uu_inv = np.array([[-2, 1],
+                       [2, -1]])
+    k = 0
+
+    # helpful info
+    # f_u_plus_xk0 = np.array([[0],
+    #                         [-1]])
+    # Rhat_f_plus_xk0 = -2.0
+    # f_u_plus_xk1 = np.array([[1],
+    #                         [-2]])
+    # Rhat_f_plus_xk1 = -1.0
+
+    expected = 1.0
+    actual = zlg._expected_estimated_risk(f_u, uu_inv, k)
+    assert actual == expected
+
+
+def test_zlg_query():
+    f_u = np.array([[-2],
+                    [1]])
+
+    uu_inv = np.array([[-2, 1],
+                       [2, -1]])
+    num_labeled = 2
+    num_samples = 4
+
+    expected = 1
+    actual = zlg.zlg_query(f_u, uu_inv, num_labeled, num_samples)
+    assert actual == expected

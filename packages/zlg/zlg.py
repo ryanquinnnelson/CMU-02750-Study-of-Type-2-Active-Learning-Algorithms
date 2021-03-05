@@ -204,20 +204,46 @@ def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
     ul = _construct_ul(L, labeled, unlabeled)  # a x b matrix
 
     # calculate minimum
-    uu_invert = np.linalg.inv(uu)
-    temp = np.matmul(-1.0 * uu_invert, ul)
-    minimum = np.matmul(temp, f_l)
+    uu_inv = np.linalg.inv(uu)  # a x a matrix
+    temp = np.matmul(-1.0 * uu_inv, ul)  # a x b matrix
+    minimum = np.matmul(temp, f_l)  # a x 1 vector
 
-    return minimum, uu_invert
-
-
-# ??
-def _expected_risk(f_plus_xk):
-    return min(f_plus_xk, 1 - f_plus_xk)
+    return minimum, uu_inv
 
 
-# ?? f_u the same as f in the risk equation vs f_i
-def _expected_estimated_risk(uu_inv, k, f_u):
+# tested
+def _add_point_to_f_u(f_u, uu_inv, k, y_k):
+    """
+    Calculates the updated minimum energy solution for all unlabeled points, if unlabeled point k is given label y_k.
+    :param f_u: a x 1 vector where a=len(unlabeled). Minimum energy solution for unlabeled points.
+    :param uu_inv: a x a matrix. Inverse matrix of the submatrix of unlabeled points in rearranged Laplacian matrix.
+    :param k: scalar, index of one unlabeled point with respect to uu_inv
+    :param y_k: scalar, hypothetical label to assign to unlabeled point
+    :return: a x 1 vector
+    """
+    f_k = f_u[k]
+    kth_col = uu_inv[:, k]
+    kth_diag = uu_inv[k, k]
+    inner = (y_k - f_k) * kth_col / kth_diag
+    change = inner.reshape(-1, 1)  # reshape to match shape of f_u
+    f_u_plus_xk = f_u + change
+
+    return f_u_plus_xk
+
+
+# tested
+def _expected_risk(f_u):
+    # for each unlabeled point
+    total = 0.0
+    for i in range(f_u.shape[0]):
+        min_i = min(f_u[i], 1 - f_u[i])
+        total += min_i
+
+    return total
+
+
+# tested
+def _expected_estimated_risk(f_u, uu_inv, k):
     """
     Calculates expected risk after querying node k, using the following formula:
 
@@ -225,26 +251,44 @@ def _expected_estimated_risk(uu_inv, k, f_u):
     :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
     :param k: index of one unlabeled point with respect to uu_inv
     :param f_u: minimum energy solution of all unlabeled points
-    :return: scalar
+    :return: scalar, the expected estimated risk
     """
 
-    # estimated risk if label y_k = 0
-    y_k = 0
-    f_k = f_u[k]
-    kth_col = uu_inv[:, k]
-    kth_diag = uu_inv[k, k]
-    a = (y_k - f_k) * kth_col / kth_diag
-    b = a.reshape(-1, 1)  # reshape to match dimension of f_u
-    f_u_plus_xk0 = f_u + b
+    # expected risk if label y_k = 0
+    f_u_plus_xk0 = _add_point_to_f_u(f_u, uu_inv, k, y_k=0)
     Rhat_f_plus_xk0 = _expected_risk(f_u_plus_xk0)
 
-    # estimated risk if label y_k = 1
-    y_k = 1
-    a = (y_k - f_k) * kth_col / kth_diag
-    b = a.reshape(-1, 1)  # reshape to match dimension of f_u
-    f_u_plus_xk1 = f_u + b
+    # expected risk if label y_k = 1
+    f_u_plus_xk1 = _add_point_to_f_u(f_u, uu_inv, k, y_k=1)
     Rhat_f_plus_xk1 = _expected_risk(f_u_plus_xk1)
 
+    # estimated expected risk
+    f_k = f_u[k]
     Rhat_f_plus_xk = (1 - f_k) * Rhat_f_plus_xk0 + f_k * Rhat_f_plus_xk1
 
     return Rhat_f_plus_xk
+
+
+# tested
+def zlg_query(f_u, uu_inv, num_labeled, num_samples):
+    """
+    Chooses a point to labeled so that the expected estimated risk is minimized once the point is added.
+    :param f_u: minimum energy solution of all unlabeled points
+    :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
+    :param num_labeled: scalar, number of labeled points
+    :param num_samples: scalar, number of samples
+    :return: scalar, index of the unlabeled point to query
+    """
+    query_idx = -1
+    min_Rhat = np.inf
+
+    # find the unlabeled point with the minimum expected risk
+    num_unlabeled = num_samples - num_labeled
+    for k in range(num_unlabeled):
+        Rhat = _expected_estimated_risk(f_u, uu_inv, k)
+
+        if Rhat < min_Rhat:
+            query_idx = k
+            min_Rhat = Rhat
+
+    return query_idx
