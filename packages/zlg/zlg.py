@@ -282,10 +282,8 @@ def _add_point_to_f_u(f_u, uu_inv, k, y_k):
     f_k = f_u[k]
     kth_col = uu_inv[:, k]
     kth_diag = uu_inv[k, k]
-    inner = (y_k - f_k) * kth_col / kth_diag
-    change = inner.reshape(-1, 1)  # reshape to match shape of f_u
+    change = (y_k - f_k) * kth_col / kth_diag
     f_u_plus_xk = f_u + change
-
     return f_u_plus_xk
 
 
@@ -350,8 +348,8 @@ def zlg_query(f_u, uu_inv, num_labeled, num_samples):
     # find the unlabeled point with the minimum expected risk
     num_unlabeled = num_samples - num_labeled
     for k in range(num_unlabeled):
-        Rhat = expected_estimated_risk(f_u, uu_inv, k)
 
+        Rhat = expected_estimated_risk(f_u, uu_inv, k)
         if Rhat < min_Rhat:
             query_idx = k
             min_Rhat = Rhat
