@@ -54,13 +54,13 @@ def test__subtract_matrices():
     np.testing.assert_array_equal(actual, expected)
 
 
-def test_Laplacian_matrix():
+def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
                   [3, 5]])
     expected = np.array([[np.exp(-8.0), -np.exp(-8.0)],
                          [-np.exp(-8.0), np.exp(-8.0)]])
-    actual = zlg.Laplacian_matrix(X, t)
+    actual = zlg.laplacian_matrix(X, t)
     np.testing.assert_allclose(actual, expected, atol=1e-13)
 
 

@@ -97,7 +97,7 @@ def _subtract_matrices(D, W):
 
 
 # tested
-def Laplacian_matrix(X, t):
+def laplacian_matrix(X, t):
     """
     Performs all steps needed to derive the Laplacian matrix from the data.
     :param X: n x m matrix, where n is the number of samples and m is the number of features
