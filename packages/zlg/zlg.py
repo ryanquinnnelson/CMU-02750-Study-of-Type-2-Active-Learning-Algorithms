@@ -106,13 +106,10 @@ def laplacian_matrix(X, t):
     """
     # calculate weight matrix W
     weights = _calculate_weights(X)
-    print('weights', weights)
     W = _construct_weight_matrix(weights, t)
-    print('W', W)
     D = _construct_diagonal_matrix(W)
-    print('D', D)
     L = _subtract_matrices(D, W)
-    print('L', L)
+
     return L
 
 
