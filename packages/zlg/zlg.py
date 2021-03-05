@@ -267,10 +267,10 @@ def minimum_energy_solution(L, labeled, unlabeled, f_l):
     return f_u, uu_inv
 
 
-# tested
 def _add_point_to_f_u(f_u, uu_inv, k, y_k):
     """
     Calculates updated minimum energy solution for all unlabeled points, if unlabeled point k is given label y_k.
+    Todo - if statement needs testing
     :param f_u: a x 1 vector where a is the number of unlabeled instances.
                 Represents the minimum energy solution for unlabeled points.
     :param uu_inv: a x a matrix.
@@ -279,11 +279,18 @@ def _add_point_to_f_u(f_u, uu_inv, k, y_k):
     :param y_k: scalar, hypothetical label to assign to unlabeled instance
     :return: a x 1 vector, representing the updated minimum energy solution
     """
+
     f_k = f_u[k]
     kth_col = uu_inv[:, k]
     kth_diag = uu_inv[k, k]
-    change = (y_k - f_k) * kth_col / kth_diag
-    f_u_plus_xk = f_u + change
+
+    if kth_diag == 0:
+        print(y_k, f_k)
+        f_u_plus_xk = f_u  # no change
+    else:
+        change = (y_k - f_k) * kth_col / kth_diag
+        f_u_plus_xk = f_u + change
+
     return f_u_plus_xk
 
 
