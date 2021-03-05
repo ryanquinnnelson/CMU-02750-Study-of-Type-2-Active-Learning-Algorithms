@@ -20,31 +20,48 @@ def test__calculate_weights():
 
     expected = np.array([[1, np.exp(-8.0)],
                          [np.exp(-8.0), 1]])
-    actual = zlg._calculate_weights_2(X)
+    actual = zlg._calculate_weights(X)
     np.testing.assert_array_equal(actual, expected)
 
 
 def test__construct_weight_matrix():
-    weights = np.array([[1, 2], [3, 4]])
+    weights = np.array([[1, 2],
+                        [3, 4]])
     t = 3.0
-    expected = np.array([[0.0, 0.0], [3, 4]])
+    expected = np.array([[0.0, 0.0],
+                         [3, 4]])
     actual = zlg._construct_weight_matrix(weights, t)
     np.testing.assert_array_equal(actual, expected)
 
 
 def test__construct_diagonal_matrix():
-    weights = np.array([[1, 2], [3, 4]])
-    expected = np.array([[3, 0], [0, 7]])
+    weights = np.array([[1, 2],
+                        [3, 4]])
+    expected = np.array([[3, 0],
+                         [0, 7]])
     actual = zlg._construct_diagonal_matrix(weights)
     np.testing.assert_array_equal(actual, expected)
 
 
-def test__construct_laplacian_matrix():
-    W = np.array([[1, 2], [3, 4]])
-    D = np.array([[3, 0], [0, 7]])
-    expected = np.array([[2, -2], [-3, 3]])
+def test__subtract_matrices():
+    W = np.array([[1, 2],
+                  [3, 4]])
+    D = np.array([[3, 0],
+                  [0, 7]])
+    expected = np.array([[2, -2],
+                         [-3, 3]])
     actual = zlg._subtract_matrices(D, W)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test_Laplacian_matrix():
+    t = 0.0
+    X = np.array([[1, 2],
+                  [3, 5]])
+    expected = np.array([[np.exp(-8.0), -np.exp(-8.0)],
+                         [-np.exp(-8.0), np.exp(-8.0)]])
+    actual = zlg.Laplacian_matrix(X, t)
+    np.testing.assert_allclose(actual, expected, atol=1e-13)
 
 
 def test__construct_ll_two_selected():

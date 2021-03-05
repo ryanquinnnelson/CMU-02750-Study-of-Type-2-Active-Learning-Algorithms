@@ -96,13 +96,24 @@ def _subtract_matrices(D, W):
     return D - W
 
 
-def Laplacian_matrix(X):
+# tested
+def Laplacian_matrix(X, t):
     """
-
-    :param X:
-    :return:
+    Performs all steps needed to derive the Laplacian matrix from the data.
+    :param X: n x m matrix, where n is the number of samples and m is the number of features
+    :param t: scalar, threshold for retaining weights
+    :return: n x n matrix, representing Laplacian matrix
     """
-    pass
+    # calculate weight matrix W
+    weights = _calculate_weights(X)
+    print('weights', weights)
+    W = _construct_weight_matrix(weights, t)
+    print('W', W)
+    D = _construct_diagonal_matrix(W)
+    print('D', D)
+    L = _subtract_matrices(D, W)
+    print('L', L)
+    return L
 
 
 # tested
