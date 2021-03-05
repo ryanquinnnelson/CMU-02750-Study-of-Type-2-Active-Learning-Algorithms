@@ -26,6 +26,7 @@ def _calculate_weights_2(X):
     return weights
 
 
+# tested
 def _calculate_weights(X):
     """
     Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
