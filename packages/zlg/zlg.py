@@ -285,7 +285,6 @@ def _add_point_to_f_u(f_u, uu_inv, k, y_k):
     kth_diag = uu_inv[k, k]
 
     if kth_diag == 0:
-        print(y_k, f_k)
         f_u_plus_xk = f_u  # no change
     else:
         change = (y_k - f_k) * kth_col / kth_diag
