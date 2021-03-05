@@ -3,17 +3,16 @@ import packages.zlg.zlg as zlg
 
 
 def test__calculate_weights_2():
-
     X = np.array([[1, 2],
                   [3, 4]])
 
     # calculate expected
     a = -1 / np.std(X)
-    inner = np.multiply(np.array([[0.0,8.0],[8.0,0.0]]),a )
+    inner = np.multiply(np.array([[0.0, 8.0], [8.0, 0.0]]), a)
     expected = np.exp(inner)
 
     actual = zlg._calculate_weights_2(X)
-    np.testing.assert_allclose(actual,expected, atol=1e-16)  # rounding errors cause problems with exact comparison
+    np.testing.assert_allclose(actual, expected, atol=1e-16)  # rounding errors cause problems with exact comparison
 
 
 def test__calculate_weights():
@@ -61,8 +60,8 @@ def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
                   [3, 5]])
-    expected = np.array([[ 0.000152, -0.000152],
-              [-0.000152,  0.000152]])
+    expected = np.array([[0.000152, -0.000152],
+                         [-0.000152, 0.000152]])
     actual = zlg.laplacian_matrix(X, t)
     np.testing.assert_allclose(actual, expected, atol=1e-06)
 
