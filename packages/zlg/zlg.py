@@ -244,7 +244,7 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
 
 
 # tested
-def min_energy_solution(L, labeled, unlabeled, f_l):
+def minimum_energy_solution(L, labeled, unlabeled, f_l):
     """
     Calculates minimum energy solution f_u for all unlabeled instances.
 

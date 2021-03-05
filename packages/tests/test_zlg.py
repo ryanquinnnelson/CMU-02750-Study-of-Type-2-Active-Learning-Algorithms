@@ -268,7 +268,7 @@ def test__rearrange_laplacian_matrix():
     np.testing.assert_array_equal(actual, expected)
 
 
-def test_min_energy_solution():
+def test_minimum_energy_solution():
     L = np.array([[1, 2, 3, 4],
                   [5, 6, 7, 8],
                   [9, 10, 11, 12],
@@ -282,7 +282,7 @@ def test_min_energy_solution():
 
     expected_uu_inv = np.array([[-2.75, 1.75],
                                 [2.5, -1.5]])
-    actual_f_u, actual_uu_inv = zlg.min_energy_solution(L, labeled, unlabeled, f_l)
+    actual_f_u, actual_uu_inv = zlg.minimum_energy_solution(L, labeled, unlabeled, f_l)
     np.testing.assert_allclose(actual_f_u, expected_f_u,
                                atol=1e-16)  # rounding errors cause problems with exact comparison
     np.testing.assert_allclose(expected_uu_inv, actual_uu_inv, atol=1e-16)
