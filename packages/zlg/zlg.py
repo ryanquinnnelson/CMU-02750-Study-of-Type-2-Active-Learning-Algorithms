@@ -3,19 +3,20 @@ from scipy.spatial import distance_matrix
 import itertools
 
 
+# unused
 # ?? how to calculate variance of X
-def _calculate_weights(X):
+# ?? confirm squared Euclidean distance
+def _calculate_weights_2(X):
     """
     Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
-    :param X: n x m matrix, where n is the number of samples and m is the number of features
+    Todo - Determine how to correctly multiply by variance.
+    :param X: n x m matrix, where n is the number of samples and d is the number of features
     :return: n x n matrix
     """
-    # calculate variance of X for each of its m dimensions
-    x_var = np.var(X, axis=1)  # 1 x m vector
     variance = 1.0
 
     # compute squared Euclidean distance between each pair of instances
-    # distances[i][j] is the distance between record i and record j
+    # X_dist[i][j] is the distance between record i and record j (i and j are rows in X)
     X_dist = distance_matrix(X, X)
     X_dist_squared = np.square(X_dist)
 
@@ -24,6 +25,34 @@ def _calculate_weights(X):
     inner = np.multiply(X_dist_squared, a)
     weights = np.exp(inner)
 
+    return weights
+
+
+def _calculate_weights(X):
+    """
+    Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
+    Calculates each of the terms individual so each term can be divided by variance.
+    :param X: n x m matrix, where n is the number of samples and m is the number of features
+    :return: n x n matrix
+    """
+
+    rows = X.shape[0]
+    cols = X.shape[1]
+    totals = np.zeros((rows, rows))  # to hold totals as they are calculated
+
+    # calculate variance of X for each of its m dimensions
+    X_var = np.var(X, axis=0)  # m x 1 vector
+
+    for i in range(rows):
+        for j in range(rows):
+
+            total = 0.0
+            for d in range(cols):
+                total += (X[i][d] - X[j][d]) * (X[i][d] - X[j][d]) / X_var[d]
+
+            totals[i][j] = total
+
+    weights = np.exp(-1.0 * totals)
     return weights
 
 
@@ -57,7 +86,7 @@ def _construct_diagonal_matrix(W):
 
 
 # tested
-def _construct_laplacian_matrix(D, W):
+def _subtract_matrices(D, W):
     """
 
     :param D: n x n diagonal matrix
@@ -67,14 +96,24 @@ def _construct_laplacian_matrix(D, W):
     return D - W
 
 
+def Laplacian_matrix(X):
+    """
+
+    :param X:
+    :return:
+    """
+    pass
+
+
 # tested
 def _construct_ll(L, labeled):
     """
+    Constructs the (labeled,labeled) instances submatrix.
     Assumes labeled is sorted in ascending order.
-    Assumes labeled list is not empty.
+    Assumes labeled is not empty.
     :param L: n x n matrix
-    :param labeled: sorted list of indices of unlabeled instances
-    :return: b x b matrix, where b=len(labeled)
+    :param labeled: sorted list of indices of labeled instances  i.e. [0,2] if instance 1 and 3 are labeled.
+    :return: b x b matrix, where b is the number of labeled instances
     """
 
     num_labeled = len(labeled)
@@ -93,10 +132,13 @@ def _construct_ll(L, labeled):
 # tested
 def _construct_uu(L, unlabeled):
     """
-    Todo - this is the same code as construct_ll(). Combine the two.
+    Constructs the (unlabeled,unlabeled) instances submatrix.
+    Assumes labeled is sorted in ascending order.
+    Assumes labeled is not empty.
+    Todo - this is the same code as construct_ll(). Consolidate code.
     :param L: n x n matrix
-    :param unlabeled: sorted list of indices of unlabeled instances
-    :return: a x a matrix, where a=len(unlabeled)
+    :param unlabeled: sorted list of indices of unlabeled instances  i.e. [0,2] if instance 1 and 3 are unlabeled.
+    :return: a x a matrix, where a is the number of unlabeled instances
     """
     num_unlabeled = len(unlabeled)
 
@@ -114,11 +156,13 @@ def _construct_uu(L, unlabeled):
 # tested
 def _construct_lu(L, labeled, unlabeled):
     """
-
+    Constructs the (labeled,unlabeled) instances submatrix.
+    Assumes labeled is sorted in ascending order.
+    Assumes labeled is not empty.
     :param L: n x n matrix
     :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
     :param unlabeled: sorted list of indices of unlabeled instances
-    :return: b x a matrix, where b=len(labeled) and a=len(unlabeled)
+    :return: b x a matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
     num_labeled = len(labeled)
     num_unlabeled = len(unlabeled)
@@ -137,11 +181,14 @@ def _construct_lu(L, labeled, unlabeled):
 # tested
 def _construct_ul(L, labeled, unlabeled):
     """
-
+    Constructs the (unlabeled,labeled) instances submatrix.
+    Assumes labeled is sorted in ascending order.
+    Assumes labeled is not empty.
+    Todo - this is almost entirely the same as _construct_lu(). Consolidate code.
     :param L: n x n matrix
     :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
     :param unlabeled: sorted list of indices of unlabeled instances
-    :return: a x b matrix, where a=len(unlabeled) and b=len(labeled)
+    :return: a x b matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
     num_labeled = len(labeled)
     num_unlabeled = len(unlabeled)
@@ -166,10 +213,10 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
     ul  uu
 
     where
-    - ll are the labeled instances
-    - uu are the unlabeled instances
-    - lu are the pairs of (labeled, unlabeled) instances
-    - ul are the pairs of (unlabeled, labeled) instances
+    - ll are the (labeled,labeled) instances
+    - uu are the (unlabeled,unlabeled) instances
+    - lu are the (labeled, unlabeled) instances
+    - ul are the (unlabeled, labeled) instances
 
     :param L: n x n matrix
     :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
@@ -191,13 +238,14 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
 # tested
 def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
     """
-    Calculates f_u.
+    Calculates minimum energy solution f_u for all unlabeled instances.
 
     :param L: n x n matrix
-    :param labeled:
-    :param unlabeled:
-    :param f_l: b x 1 vector of labeled instances, where b=len(labeled)
-    :return: (a x 1 vector, a x b matrix) Tuple where a=len(unlabeled). Represents (f_u, uu_invert).
+    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
+    :param unlabeled: sorted list of indices of unlabeled instances
+    :param f_l: b x 1 vector of labeled instances, where b is the number of labeled instances
+    :return: (a x 1 vector, a x b matrix) Tuple where a is the number of unlabeled instances.
+            Tuple represents (f_u, uu_inv).
     """
     # rearrange cells into sub-matrices
     uu = _construct_uu(L, unlabeled)  # a x a matrix
@@ -206,20 +254,22 @@ def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
     # calculate minimum
     uu_inv = np.linalg.inv(uu)  # a x a matrix
     temp = np.matmul(-1.0 * uu_inv, ul)  # a x b matrix
-    minimum = np.matmul(temp, f_l)  # a x 1 vector
+    f_u = np.matmul(temp, f_l)  # a x 1 vector
 
-    return minimum, uu_inv
+    return f_u, uu_inv
 
 
 # tested
 def _add_point_to_f_u(f_u, uu_inv, k, y_k):
     """
-    Calculates the updated minimum energy solution for all unlabeled points, if unlabeled point k is given label y_k.
-    :param f_u: a x 1 vector where a=len(unlabeled). Minimum energy solution for unlabeled points.
-    :param uu_inv: a x a matrix. Inverse matrix of the submatrix of unlabeled points in rearranged Laplacian matrix.
-    :param k: scalar, index of one unlabeled point with respect to uu_inv
-    :param y_k: scalar, hypothetical label to assign to unlabeled point
-    :return: a x 1 vector
+    Calculates updated minimum energy solution for all unlabeled points, if unlabeled point k is given label y_k.
+    :param f_u: a x 1 vector where a is the number of unlabeled instances.
+                Represents the minimum energy solution for unlabeled points.
+    :param uu_inv: a x a matrix.
+                    Inverse matrix of the submatrix of unlabeled points from the rearranged Laplacian matrix.
+    :param k: scalar, index of one unlabeled instance with respect to uu_inv
+    :param y_k: scalar, hypothetical label to assign to unlabeled instance
+    :return: a x 1 vector, representing the updated minimum energy solution
     """
     f_k = f_u[k]
     kth_col = uu_inv[:, k]
@@ -233,6 +283,12 @@ def _add_point_to_f_u(f_u, uu_inv, k, y_k):
 
 # tested
 def _expected_risk(f_u):
+    """
+    Calculates the expected risk of all unlabeled instances in the given minimum energy solution.
+    :param f_u: a x 1 vector where a is the number of unlabeled instances.
+                Represents the minimum energy solution for unlabeled points.
+    :return: scalar
+    """
     # for each unlabeled point
     total = 0.0
     for i in range(f_u.shape[0]):
@@ -245,8 +301,7 @@ def _expected_risk(f_u):
 # tested
 def _expected_estimated_risk(f_u, uu_inv, k):
     """
-    Calculates expected risk after querying node k, using the following formula:
-
+    Calculates expected risk after querying node k.
 
     :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
     :param k: index of one unlabeled point with respect to uu_inv
@@ -272,9 +327,11 @@ def _expected_estimated_risk(f_u, uu_inv, k):
 # tested
 def zlg_query(f_u, uu_inv, num_labeled, num_samples):
     """
-    Chooses a point to labeled so that the expected estimated risk is minimized once the point is added.
-    :param f_u: minimum energy solution of all unlabeled points
-    :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
+    Chooses an instance to label such that the expected estimated risk of the resulting model is minimized.
+    :param f_u: a x 1 vector where a is the number of unlabeled instances.
+                Represents the minimum energy solution for unlabeled points.
+    :param uu_inv: a x a matrix.
+                    Inverse matrix of the submatrix of unlabeled points from the rearranged Laplacian matrix.
     :param num_labeled: scalar, number of labeled points
     :param num_samples: scalar, number of samples
     :return: scalar, index of the unlabeled point to query
