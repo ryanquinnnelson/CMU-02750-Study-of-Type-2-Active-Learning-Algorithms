@@ -250,8 +250,20 @@ def test__calc_minimum_energy_solution():
     unlabeled = [1, 2]  # don't label instance 2 and 3
     f_l = np.array([[1], [0]])
 
-    expected = np.array([[-2],
+    expected_f_u = np.array([[-2],
                          [1]])
-    actual = zlg._calc_minimum_energy_solution(L, labeled, unlabeled, f_l)
-    # np.testing.assert_array_equal(actual, expected)
-    np.testing.assert_allclose(actual, expected, atol=1e-16)  # rounding errors cause problems with exact comparison
+
+    expected_uu_invert = np.array([[-2.75, 1.75],
+                                   [2.5,-1.5]])
+    actual_f_u, actual_uu_invert = zlg._calc_minimum_energy_solution(L, labeled, unlabeled, f_l)
+    np.testing.assert_allclose(actual_f_u, expected_f_u, atol=1e-16)  # rounding errors cause problems with exact comparison
+    np.testing.assert_allclose(expected_uu_invert, actual_uu_invert, atol=1e-16)
+
+
+
+
+
+
+
+
+

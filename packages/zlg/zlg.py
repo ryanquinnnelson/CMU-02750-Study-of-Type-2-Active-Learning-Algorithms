@@ -197,7 +197,7 @@ def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
     :param labeled:
     :param unlabeled:
     :param f_l: b x 1 vector of labeled instances, where b=len(labeled)
-    :return: a x 1 vector, where a=len(unlabeled)
+    :return: (a x 1 vector, a x b matrix) Tuple where a=len(unlabeled). Represents (f_u, uu_invert).
     """
     # rearrange cells into sub-matrices
     uu = _construct_uu(L, unlabeled)  # a x a matrix
@@ -208,4 +208,43 @@ def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
     temp = np.matmul(-1.0 * uu_invert, ul)
     minimum = np.matmul(temp, f_l)
 
-    return minimum
+    return minimum, uu_invert
+
+
+# ??
+def _expected_risk(f_plus_xk):
+    return min(f_plus_xk, 1 - f_plus_xk)
+
+
+# ?? f_u the same as f in the risk equation vs f_i
+def _expected_estimated_risk(uu_inv, k, f_u):
+    """
+    Calculates expected risk after querying node k, using the following formula:
+
+
+    :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
+    :param k: index of one unlabeled point with respect to uu_inv
+    :param f_u: minimum energy solution of all unlabeled points
+    :return: scalar
+    """
+
+    # estimated risk if label y_k = 0
+    y_k = 0
+    f_k = f_u[k]
+    kth_col = uu_inv[:, k]
+    kth_diag = uu_inv[k, k]
+    a = (y_k - f_k) * kth_col / kth_diag
+    b = a.reshape(-1, 1)  # reshape to match dimension of f_u
+    f_u_plus_xk0 = f_u + b
+    Rhat_f_plus_xk0 = _expected_risk(f_u_plus_xk0)
+
+    # estimated risk if label y_k = 1
+    y_k = 1
+    a = (y_k - f_k) * kth_col / kth_diag
+    b = a.reshape(-1, 1)  # reshape to match dimension of f_u
+    f_u_plus_xk1 = f_u + b
+    Rhat_f_plus_xk1 = _expected_risk(f_u_plus_xk1)
+
+    Rhat_f_plus_xk = (1 - f_k) * Rhat_f_plus_xk0 + f_k * Rhat_f_plus_xk1
+
+    return Rhat_f_plus_xk
