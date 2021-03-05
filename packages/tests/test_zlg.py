@@ -56,14 +56,15 @@ def test__subtract_matrices():
     np.testing.assert_array_equal(actual, expected)
 
 
+# confirm this test
 def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
                   [3, 5]])
-    expected = np.array([[np.exp(-8.0), -np.exp(-8.0)],
-                         [-np.exp(-8.0), np.exp(-8.0)]])
+    expected = np.array([[ 0.000152, -0.000152],
+              [-0.000152,  0.000152]])
     actual = zlg.laplacian_matrix(X, t)
-    np.testing.assert_allclose(actual, expected, atol=1e-13)
+    np.testing.assert_allclose(actual, expected, atol=1e-06)
 
 
 def test__construct_ll_two_selected():

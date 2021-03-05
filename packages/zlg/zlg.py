@@ -104,7 +104,7 @@ def laplacian_matrix(X, t):
     :return: n x n matrix, representing Laplacian matrix
     """
     # calculate weight matrix W
-    weights = _calculate_weights(X)
+    weights = _calculate_weights_2(X)
     W = _construct_weight_matrix(weights, t)
     D = _construct_diagonal_matrix(W)
     L = _subtract_matrices(D, W)
@@ -118,6 +118,7 @@ def _construct_ll(L, labeled):
     Constructs the (labeled,labeled) instances submatrix.
     Assumes labeled is sorted in ascending order.
     Assumes labeled is not empty.
+    Todo - sort lists internal so assumption is not needed
     :param L: n x n matrix
     :param labeled: sorted list of indices of labeled instances  i.e. [0,2] if instance 1 and 3 are labeled.
     :return: b x b matrix, where b is the number of labeled instances
