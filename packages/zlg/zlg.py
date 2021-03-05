@@ -3,17 +3,15 @@ from scipy.spatial import distance_matrix
 import itertools
 
 
-# unused
-# ?? how to calculate variance of X
 # ?? confirm squared Euclidean distance
+# tested
 def _calculate_weights_2(X):
     """
     Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
-    Todo - Determine how to correctly multiply by variance.
+    Using a single sigma value, calculated from X.
     :param X: n x m matrix, where n is the number of samples and d is the number of features
     :return: n x n matrix
     """
-    variance = 1.0
 
     # compute squared Euclidean distance between each pair of instances
     # X_dist[i][j] is the distance between record i and record j (i and j are rows in X)
@@ -21,7 +19,7 @@ def _calculate_weights_2(X):
     X_dist_squared = np.square(X_dist)
 
     # remaining calculations
-    a = -1 / variance
+    a = -1 / np.std(X)
     inner = np.multiply(X_dist_squared, a)
     weights = np.exp(inner)
 
@@ -31,7 +29,7 @@ def _calculate_weights_2(X):
 def _calculate_weights(X):
     """
     Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
-    Calculates each of the terms individual so each term can be divided by variance.
+    Calculates each of the terms individually so each term can be divided by variance. (Uses sigma d.)
     :param X: n x m matrix, where n is the number of samples and m is the number of features
     :return: n x n matrix
     """
