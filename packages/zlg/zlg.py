@@ -247,7 +247,7 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
 
 
 # tested
-def _calc_minimum_energy_solution(L, labeled, unlabeled, f_l):
+def min_energy_solution(L, labeled, unlabeled, f_l):
     """
     Calculates minimum energy solution f_u for all unlabeled instances.
 
@@ -310,7 +310,7 @@ def _expected_risk(f_u):
 
 
 # tested
-def _expected_estimated_risk(f_u, uu_inv, k):
+def expected_estimated_risk(f_u, uu_inv, k):
     """
     Calculates expected risk after querying node k.
 
@@ -353,7 +353,7 @@ def zlg_query(f_u, uu_inv, num_labeled, num_samples):
     # find the unlabeled point with the minimum expected risk
     num_unlabeled = num_samples - num_labeled
     for k in range(num_unlabeled):
-        Rhat = _expected_estimated_risk(f_u, uu_inv, k)
+        Rhat = expected_estimated_risk(f_u, uu_inv, k)
 
         if Rhat < min_Rhat:
             query_idx = k
