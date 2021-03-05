@@ -289,23 +289,20 @@ def test_minimum_energy_solution():
 
 
 def test__add_point_to_f_u():
-    f_u = np.array([[-2],
-                    [1]])
+    f_u = np.array([-2, 1])
 
     uu_inv = np.array([[-2, 1],
                        [2, -1]])
     k = 0
     y_k = 1
 
-    expected = np.array([[1],
-                         [-2]])
+    expected = np.array([1, -2])
     actual = zlg._add_point_to_f_u(f_u, uu_inv, k, y_k)
     np.testing.assert_array_equal(actual, expected)
 
 
 def test__expected_risk():
-    f_u = np.array([[-2],
-                    [1]])
+    f_u = np.array([-2, 1])
 
     expected = -2.0
     actual = zlg._expected_risk(f_u)
@@ -313,8 +310,7 @@ def test__expected_risk():
 
 
 def test_expected_estimated_risk():
-    f_u = np.array([[-2],
-                    [1]])
+    f_u = np.array([-2, 1])
 
     uu_inv = np.array([[-2, 1],
                        [2, -1]])
@@ -334,8 +330,7 @@ def test_expected_estimated_risk():
 
 
 def test_zlg_query():
-    f_u = np.array([[-2],
-                    [1]])
+    f_u = np.array([-2, 1])
 
     uu_inv = np.array([[-2, 1],
                        [2, -1]])
