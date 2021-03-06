@@ -2,27 +2,27 @@ import numpy as np
 import packages.zlg.zlg as zlg
 
 
-def test__calculate_weights_2():
-    X = np.array([[1, 2],
-                  [3, 4]])
-
-    # calculate expected
-    a = -1 / np.std(X)
-    inner = np.multiply(np.array([[0.0, 8.0], [8.0, 0.0]]), a)
-    expected = np.exp(inner)
-
-    actual = zlg._calculate_weights_2(X)
-    np.testing.assert_allclose(actual, expected, atol=1e-16)  # rounding errors cause problems with exact comparison
-
-
-def test__calculate_weights():
+def test__calculate_weights_1():
     X = np.array([[1, 2],
                   [3, 5]])
 
     expected = np.array([[1, np.exp(-8.0)],
                          [np.exp(-8.0), 1]])
-    actual = zlg._calculate_weights(X)
+    actual = zlg._calculate_weights_1(X)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test__calculate_weights_2():
+    X = np.array([[1, 2],
+                  [3, 4]])
+
+    # calculate expected
+    a = -1 / np.square(np.std(X))
+    inner = np.multiply(np.array([[0.0, 8.0], [8.0, 0.0]]), a)
+    expected = np.exp(inner)
+
+    actual = zlg._calculate_weights_2(X)
+    np.testing.assert_allclose(actual, expected, atol=1e-16)  # rounding errors cause problems with exact comparison
 
 
 def test__construct_weight_matrix():
@@ -60,10 +60,23 @@ def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
                   [3, 5]])
-    expected = np.array([[0.000152, -0.000152],
-                         [-0.000152, 0.000152]])
+    expected = np.array([[ 0.002625, -0.002625],
+              [-0.002625,  0.002625]])
     actual = zlg.laplacian_matrix(X, t)
     np.testing.assert_allclose(actual, expected, atol=1e-06)
+
+
+def test__construct_square_submatrix():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    idx = [0, 3]  # select instance 1 and 4
+    expected = np.array([[1, 4],
+                         [13, 16]])
+
+    actual = zlg._construct_ll(L, idx)
+    np.testing.assert_array_equal(actual, expected)
 
 
 def test__construct_ll_two_selected():

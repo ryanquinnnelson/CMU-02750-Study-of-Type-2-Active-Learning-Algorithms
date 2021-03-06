@@ -1,47 +1,35 @@
+"""
+Implementation of ZLG algorithm from the paper by Zhu, Lafferty, and Ghahramani.
+See http://mlg.eng.cam.ac.uk/zoubin/papers/zglactive.pdf.
+"""
+
 import numpy as np
 from scipy.spatial import distance_matrix
-import itertools
 
 
 # ?? confirm squared Euclidean distance
 # tested
-def _calculate_weights_2(X):
+def _calculate_weights_1(X):
     """
-    Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
-    Using a single sigma value, calculated from X.
-    :param X: n x m matrix, where n is the number of samples and d is the number of features
-    :return: n x n matrix
-    """
+    Uses Radial Basis Function (RBF) to calculate weight w_ij for each pair of instances x_i and x_j using the
+    formula:
 
-    # compute squared Euclidean distance between each pair of instances
-    # X_dist[i][j] is the distance between record i and record j (i and j are rows in X)
-    X_dist = distance_matrix(X, X)
-    X_dist_squared = np.square(X_dist)
+    w_ij = exp(  -1 * SUM_d (x_id - x_jd)^2 / σ^2_d )
 
-    # remaining calculations
-    a = -1 / np.std(X)
-    inner = np.multiply(X_dist_squared, a)
-    weights = np.exp(inner)
-
-    return weights
-
-
-# tested
-def _calculate_weights(X):
-    """
-    Uses Radial Basis Function to calculate weight w_ij for each pair of instances x_i and x_j.
-    Calculates each of the terms individually so each term can be divided by variance. (Uses sigma d.)
+    Note: This implementation divides each dimension term of a vector pair by the variance of that dimension as part of
+    the summation, rather than multiple the entire sum by one variance value.
+    Todo - Find more efficient way to calculate this. Currently O(n^3).
     :param X: n x m matrix, where n is the number of samples and m is the number of features
     :return: n x n matrix
     """
 
-    rows = X.shape[0]
-    cols = X.shape[1]
-    totals = np.zeros((rows, rows))  # to hold totals as they are calculated
-
     # calculate variance of X for each of its m dimensions
     X_var = np.var(X, axis=0)  # m x 1 vector
 
+    # perform summation for each pair of instances
+    rows = X.shape[0]
+    cols = X.shape[1]
+    totals = np.zeros((rows, rows))  # matrix to hold totals as they are calculated
     for i in range(rows):
         for j in range(rows):
 
@@ -51,16 +39,46 @@ def _calculate_weights(X):
 
             totals[i][j] = total
 
+    # remaining calculations
     weights = np.exp(-1.0 * totals)
+
+    return weights
+
+
+# ?? confirm squared Euclidean distance
+# tested
+def _calculate_weights_2(X):
+    """
+    Uses Radial Basis Function (RBF) to calculate weight w_ij for each pair of instances x_i and x_j using the
+    formula:
+
+    w_ij = exp(  -1/σ^2 * SUM_d (x_id - x_jd)^2  )
+
+    Note: This method calculates a single scalar for variance over the entire data.
+
+    :param X: n x m matrix, where n is the number of samples and m is the number of features
+    :return: n x n symmetric matrix, where (i,j) is the calculated weight between x_i and x_j
+    """
+
+    # compute squared Euclidean distance between each pair of instances
+    # X_dist[i][j] is the distance between row i and row j in X
+    X_dist_squared = np.square(distance_matrix(X, X))
+
+    # remaining calculations
+    a = -1.0 / np.var(X)
+    b = np.multiply(X_dist_squared, a)
+    weights = np.exp(b)
+
     return weights
 
 
 # tested
 def _construct_weight_matrix(weights, t):
     """
-    Retain values where weight w_ij >= t. Replace values where weight w_ij < t with 0.0
+    Filters out weights w_ij < t and replaces values with zero.
+
     :param weights: n x n matrix
-    :param t: scalar threshold
+    :param t: scalar, user-defined threshold for retaining weights
     :return: n x n matrix
     """
     W = np.where(weights >= t, weights, 0.0)
@@ -70,7 +88,7 @@ def _construct_weight_matrix(weights, t):
 # tested
 def _construct_diagonal_matrix(W):
     """
-    Generates a diagonal matrix D=diag(d_i) where d_i = SUM_j w_ij.
+    Generates diagonal matrix D in which diagonal element d_i is equal to the sum of the ith row of W.
 
     :param W: n x n matrix
     :return: n x n matrix
@@ -87,6 +105,7 @@ def _construct_diagonal_matrix(W):
 # tested
 def _subtract_matrices(D, W):
     """
+    Subtracts weights matrix W from diagonal matrix D.
 
     :param D: n x n diagonal matrix
     :param W: n x n weights matrix
@@ -98,13 +117,14 @@ def _subtract_matrices(D, W):
 # tested
 def laplacian_matrix(X, t):
     """
-    Performs all steps needed to derive the Laplacian matrix from the data.
-    :param X: n x m matrix, where n is the number of samples and m is the number of features
-    :param t: scalar, threshold for retaining weights
-    :return: n x n matrix, representing Laplacian matrix
+    Performs all steps needed to derive the combinatorial Laplacian matrix DELTA from the data.
+
+    :param X: n x m matrix, where n is the number of instances and m is the number of features
+    :param t: scalar, user-defined threshold for retaining weights
+    :return: n x n matrix
     """
     # calculate weight matrix W
-    weights = _calculate_weights_2(X)
+    weights = _calculate_weights_2(X)  # faster than method 1
     W = _construct_weight_matrix(weights, t)
     D = _construct_diagonal_matrix(W)
     L = _subtract_matrices(D, W)
@@ -112,53 +132,55 @@ def laplacian_matrix(X, t):
     return L
 
 
+def _construct_square_submatrix(L, idx):
+    """
+    Constructs square submatrix from the given Laplacian matrix. The process for submatrix ll and uu is exactly the
+    same, only the list is different.
+    Todo - Determine if sorting really needs to be performed.
+    :param L:
+    :param idx: list of zero-based indexes representing instance positions in the Laplacian matrix.
+                    i.e. [0,2] if instance 1 and 3 are selected.
+    :return: c x c matrix, where c is the number of indexes provided
+    """
+    # sort labeled
+    idx_sorted = sorted(idx)
+
+    # scaffold for values
+    c = len(idx_sorted)
+    scaffold = np.zeros((c, c))
+
+    # all combinations of indexes i.e. 1 and 2 -> (1,1), (1,2), (2,1), (2,2)
+    for idx1, i in enumerate(idx_sorted):
+        for idx2, j in enumerate(idx_sorted):
+            scaffold[idx1][idx2] = L[i][j]
+
+    return scaffold
+
+
 # tested
 def _construct_ll(L, labeled):
     """
-    Constructs the (labeled,labeled) instances submatrix.
-    Assumes labeled is sorted in ascending order.
-    Assumes labeled is not empty.
-    Todo - sort lists internal so assumption is not needed
+    Constructs square (labeled,labeled) submatrix from the given Laplacian matrix.
+
     :param L: n x n matrix
-    :param labeled: sorted list of indices of labeled instances  i.e. [0,2] if instance 1 and 3 are labeled.
+    :param labeled: sorted list of zero-based indexes representing labeled instance positions in the Laplacian matrix.
+                    i.e. [0,2] if instance 1 and 3 are labeled.
     :return: b x b matrix, where b is the number of labeled instances
     """
-
-    num_labeled = len(labeled)
-
-    # build ll scaffold
-    ll = np.zeros((num_labeled, num_labeled))
-
-    # generate all combinations of labeled indices i.e. (1,2) -> (1,1), (1,2), (2,1), (2,2)
-    for idx1, i in enumerate(labeled):
-        for idx2, j in enumerate(labeled):
-            ll[idx1][idx2] = L[i][j]
-
-    return ll
+    return _construct_square_submatrix(L, labeled)
 
 
 # tested
 def _construct_uu(L, unlabeled):
     """
-    Constructs the (unlabeled,unlabeled) instances submatrix.
-    Assumes labeled is sorted in ascending order.
-    Assumes labeled is not empty.
-    Todo - this is the same code as construct_ll(). Consolidate code.
+    Constructs square (unlabeled,unlabeled) instances submatrix from the given Laplacian matrix.
+
     :param L: n x n matrix
-    :param unlabeled: sorted list of indices of unlabeled instances  i.e. [0,2] if instance 1 and 3 are unlabeled.
+    :param unlabeled: sorted list of indexes representing unlabeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instance 1 and 3 are unlabeled.
     :return: a x a matrix, where a is the number of unlabeled instances
     """
-    num_unlabeled = len(unlabeled)
-
-    # build uu scaffold
-    uu = np.zeros((num_unlabeled, num_unlabeled))
-
-    # generate all combinations of unlabeled indices i.e. (1,2) -> (1,1), (1,2), (2,1), (2,2)
-    for idx1, i in enumerate(unlabeled):
-        for idx2, j in enumerate(unlabeled):
-            uu[idx1][idx2] = L[i][j]
-
-    return uu
+    return _construct_square_submatrix(L, unlabeled)
 
 
 # tested
