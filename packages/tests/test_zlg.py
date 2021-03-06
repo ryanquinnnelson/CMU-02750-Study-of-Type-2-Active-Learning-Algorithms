@@ -66,7 +66,7 @@ def test_laplacian_matrix():
     np.testing.assert_allclose(actual, expected, atol=1e-06)
 
 
-def test__construct_square_submatrix():
+def test__helper_square_submatrix():
     L = np.array([[1, 2, 3, 4],
                   [5, 6, 7, 8],
                   [9, 10, 11, 12],
@@ -75,7 +75,7 @@ def test__construct_square_submatrix():
     expected = np.array([[1, 4],
                          [13, 16]])
 
-    actual = zlg._construct_square_submatrix(L, idx)
+    actual = zlg._helper_square_submatrix(L, idx)
     np.testing.assert_array_equal(actual, expected)
 
 
@@ -157,7 +157,7 @@ def test__construct_uu_one_selected():
     np.testing.assert_array_equal(actual, expected)
 
 
-def test__construct_rectangular_submatrix():
+def test__helper_rectangular_submatrix():
     L = np.array([[1, 2, 3, 4],
                   [5, 6, 7, 8],
                   [9, 10, 11, 12],
@@ -167,7 +167,7 @@ def test__construct_rectangular_submatrix():
     expected = np.array([[2, 3],
                          [14, 15]])
 
-    actual = zlg._construct_rectangular_submatrix(L, labeled, unlabeled)
+    actual = zlg._helper_rectangular_submatrix(L, labeled, unlabeled)
     np.testing.assert_array_equal(actual, expected)
 
 def test__construct_lu_two_selected():

@@ -133,7 +133,7 @@ def laplacian_matrix(X, t):
 
 
 # tested
-def _construct_square_submatrix(L, idx):
+def _helper_square_submatrix(L, idx):
     """
     Constructs square submatrix from the given Laplacian matrix. The process for submatrix ll and uu is exactly the
     same, only the list is different.
@@ -162,13 +162,49 @@ def _construct_square_submatrix(L, idx):
 def _construct_ll(L, labeled):
     """
     Constructs square (labeled,labeled) submatrix from the given Laplacian matrix.
+    Repositions all (i,j) cells from L into a square submatrix:
+        Examples
+        --------
+
+        L =
+
+        | |  a | ab | ac | ad |
+        | | ba |  b | bc | bd |
+        | | ca | cb |  c | cd |
+        | | da | db | dc |  d |
+        |
+
+        Labeled instances: a,d
+
+        _construct_ll(L, [0,3])  # 2x2
+
+        |  |  a | ad |
+        |  | da |  d |
+        |
+
+
+        Labeled instances: b,c,d
+
+        _construct_ll(L, [1,2,3])  # 3x3
+
+        |  |  b | bc | bd |
+        |  | cb |  c | cd |
+        |  | db | dc |  d |
+        |
+
+        Labeled instances: d
+
+        _construct_ll(L, [3])  # 1x1
+
+        | | d |
+        |
 
     :param L: n x n matrix, Laplacian
     :param labeled: list of zero-based indexes representing labeled instance positions in the Laplacian matrix.
                     i.e. [0,2] if instance 1 and 3 are labeled.
     :return: b x b matrix, where b is the number of labeled instances
     """
-    return _construct_square_submatrix(L, labeled)
+    return _helper_square_submatrix(L, labeled)
 
 
 # tested
@@ -176,16 +212,52 @@ def _construct_uu(L, unlabeled):
     """
     Constructs square (unlabeled,unlabeled) instances submatrix from the given Laplacian matrix.
 
+        Examples
+        --------
+
+        L =
+
+        | |  a | ab | ac | ad |
+        | | ba |  b | bc | bd |
+        | | ca | cb |  c | cd |
+        | | da | db | dc |  d |
+        |
+
+        Unlabeled instances: a,d
+
+        _construct_uu(L, [0,3])  # 2x2
+
+        |  |  a | ad |
+        |  | da |  d |
+        |
+
+
+        Unlabeled instances: b,c,d
+
+        _construct_uu(L, [1,2,3])  # 3x3
+
+        |  |  b | bc | bd |
+        |  | cb |  c | cd |
+        |  | db | dc |  d |
+        |
+
+        Unlabeled instances: d
+
+        _construct_uu(L, [3])  # 1x1
+
+        | | d |
+        |
+
     :param L: n x n matrix, Laplacian
     :param unlabeled: list of indexes representing unlabeled instance positions in the Laplacian matrix.
                         i.e. [0,2] if instance 1 and 3 are unlabeled.
     :return: a x a matrix, where a is the number of unlabeled instances
     """
-    return _construct_square_submatrix(L, unlabeled)
+    return _helper_square_submatrix(L, unlabeled)
 
 
-
-def _construct_rectangular_submatrix(L, idx_i, idx_j):
+# tested
+def _helper_rectangular_submatrix(L, idx_i, idx_j):
     """
     Constructs rectangular submatrix from the given Laplacian matrix.
     Todo - Determine if sorting is really necessary.
@@ -220,6 +292,46 @@ def _construct_lu(L, labeled, unlabeled):
     """
     Constructs rectangular (labeled,unlabeled) instances submatrix from the given Laplacian matrix.
 
+        Examples
+        --------
+
+        L =
+
+        | |  a | ab | ac | ad |
+        | | ba |  b | bc | bd |
+        | | ca | cb |  c | cd |
+        | | da | db | dc |  d |
+        |
+
+        Labeled instances: a,d
+        Unlabeled instances: b,c
+
+        _construct_lu(L, [0,3], [1,2])  # 2x2
+
+        |  | ab | ac |
+        |  | db | dc |
+        |
+
+        Labeled instances: a
+        Unlabeled instances: b,c,d
+
+        _construct_lu(L, [0], [1,2,3])  # 1x3
+
+        |  | ab | ac | ad |
+        |
+
+        Labeled instances: a,b,c
+        Unlabeled instances: d
+
+        _construct_lu(L, [0,1,2], [3])  # 3x1
+
+        | | ad |
+        | | bd |
+        | | cd |
+        |
+
+
+
     :param L: n x n matrix, Laplacian
     :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
                         i.e. [0,2] if instances 1 and 3 are labeled.
@@ -227,13 +339,52 @@ def _construct_lu(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: b x a matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    return _construct_rectangular_submatrix(L, labeled, unlabeled)
+    return _helper_rectangular_submatrix(L, labeled, unlabeled)
 
 
 # tested
 def _construct_ul(L, labeled, unlabeled):
     """
     Constructs rectangular (unlabeled,labeled) instances submatrix from the given Laplacian matrix.
+
+        Examples
+        --------
+
+        L =
+
+        | |  a | ab | ac | ad |
+        | | ba |  b | bc | bd |
+        | | ca | cb |  c | cd |
+        | | da | db | dc |  d |
+        |
+
+        Labeled instances: a,d
+        Unlabeled instances: b,c
+
+        _construct_ul(L, [1,2], [0,3])  # 2x2
+
+        |  | ba | bd |
+        |  | ca | cd |
+        |
+
+        Labeled instances: a
+        Unlabeled instances: b,c,d
+
+        _construct_ul(L, [1,2,3], [0])  # 3x1
+
+        | | ba |
+        | | ca |
+        | | da |
+        |
+
+
+        Labeled instances: a,b,c
+        Unlabeled instances: d
+
+        _construct_ul(L, [3], [0,1,2])  # 1x3
+
+        | | da | db | dc |
+        |
 
     :param L: n x n matrix, Laplacian
     :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
@@ -242,8 +393,7 @@ def _construct_ul(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: a x b matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    return _construct_rectangular_submatrix(L, unlabeled, labeled)
-
+    return _helper_rectangular_submatrix(L, unlabeled, labeled)
 
 
 # tested
