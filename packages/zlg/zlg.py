@@ -1,5 +1,5 @@
 """
-Implementation of ZLG algorithm from the paper by Zhu, Lafferty, and Ghahramani.
+Implementation of binary classifier ZLG, the active learning algorithm from the paper by Zhu, Lafferty, and Ghahramani.
 See http://mlg.eng.cam.ac.uk/zoubin/papers/zglactive.pdf.
 """
 
@@ -25,7 +25,8 @@ def _calculate_weights_1(X):
     Note: This implementation divides each dimension term of a vector pair by the variance of that dimension as part of
     the summation, rather than multiple the entire sum by one variance value.
     See https://www.aaai.org/Papers/ICML/2003/ICML03-118.pdf).
-    Todo - Find more efficient way to incorporate variance into terms. Currently O(n^3).
+    Todo - Find more efficient way to incorporate variance into terms. Really poor performance.
+    Todo - Doesn't work correctly. Results in worse performance over time, and I'm not sure why yet.
     :param X: n x m matrix, where n is the number of samples and m is the number of features
     :return: n x n matrix
     """
@@ -87,11 +88,13 @@ def _calculate_weights_2(X):
 # tested
 def _construct_weight_matrix(weights, t):
     """
-    Filters out weights w_ij < t and replaces values with zero.
+    Constructs n x n graph in which a given pair of nodes is connected by an edge
+    only if the precomputed weight w_ij exceeds the user-defined threshold t. If
+    the threshold is met, edge (i,j) is created with weight w_ij.
 
     :param weights: n x n matrix
     :param t: scalar, user-defined threshold for retaining weights
-    :return: n x n matrix
+    :return: n x n matrix, where non-zero values represent edges
     """
     W = np.where(weights >= t, weights, 0.0)
     return W
@@ -100,7 +103,9 @@ def _construct_weight_matrix(weights, t):
 # tested
 def _construct_diagonal_matrix(W):
     """
-    Generates diagonal matrix D in which diagonal element d_i is equal to the sum of the ith row of W.
+    Generates diagonal matrix D in which diagonal element d_i is the weighted degree of node Y_i.
+
+    |  d_i = d_(i,i) = SUM_j W(i,j)  // the sum of the ith row of W
 
     :param W: n x n matrix
     :return: n x n matrix
@@ -136,7 +141,7 @@ def laplacian_matrix(X, t):
     :return: n x n matrix
     """
     # calculate weight matrix W
-    weights = _calculate_weights_2(X)  # faster than method 1
+    weights = _calculate_weights_2(X)
     W = _construct_weight_matrix(weights, t)
     D = _construct_diagonal_matrix(W)
     L = _subtract_matrices(D, W)
@@ -445,14 +450,20 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
 # tested
 def minimum_energy_solution(L, labeled, unlabeled, f_l):
     """
-    Calculates minimum energy solution f_u for all unlabeled instances using the given formula:
+    Calculates minimum energy solution f_u for all unlabeled instances given the labeled instances.
+    Uses the following formula:
 
-    f_u = -1 * uu_inv * ul * f_l
+    |
+    |  f_u = -1 * uu_inv * ul * f_l
+    |
+    |  where
+    |  - uu_inv is the inverted (unlabeled, unlabeled) submatrix generated from the Laplacian.
+    |  - ul is the (unlabeled, labeled) submatrix generated from the Laplacian.
+    |  - f_u is the mean values on unlabeled data.
+    |
 
-    where
-    - uu_inv is the inverted (unlabeled, unlabeled) submatrix generated from the Laplacian.
-    - ul is the (unlabeled, labeled) submatrix generated from the Laplacian.
-    - f_u is the mean values on unlabeled data.
+    The minimum energy solution for the kth unlabeled instance is the estimated binary label on [0,1].
+    We infer the label by rounding: i.e. f_k = 0.1 would be rounded to 0 and f_k = 0.9 would be rounded to 1.
 
     :param L: n x n matrix, Laplacian
     :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
@@ -543,13 +554,14 @@ def expected_estimated_risk(f_u, uu_inv, k):
     """
     Calculates expected risk after querying node k. Uses the following formula:
 
-    Rhat(f_u_plus_xk) = (1 - f_k) * Rhat(f_u_plus_xk0) + f_k * Rhat(f_u_plus_xk1)
-
-    where
-    - f_u_plus_xk is the updated minimum energy solution of unlabeled points if instance x_k was labeled
-    - f_k is the current minimum energy solution of the kth unlabeled point
-    - f_u_plus_xk0 is the updated minimum energy solution of unlabeled points if instance x_k was labeled y_k=0
-    - f_u_plus_xk1 is the updated minimum energy solution of unlabeled points if instance x_k was labeled y_k=1
+    |
+    |  Rhat(f_u_plus_xk) = (1 - f_k) * Rhat(f_u_plus_xk0) + f_k * Rhat(f_u_plus_xk1)
+    |
+    |  where
+    |  - f_u_plus_xk is the updated minimum energy solution of unlabeled points if instance x_k was labeled
+    |  - f_k is the current minimum energy solution of the kth unlabeled point
+    |  - f_u_plus_xk0 is the updated minimum energy solution of unlabeled points if instance x_k was labeled y_k=0
+    |  - f_u_plus_xk1 is the updated minimum energy solution of unlabeled points if instance x_k was labeled y_k=1
 
     :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
     :param k: index of one unlabeled point with respect to uu_inv
@@ -576,6 +588,7 @@ def expected_estimated_risk(f_u, uu_inv, k):
 def zlg_query(f_u, uu_inv, num_labeled, num_samples):
     """
     Chooses an instance to label such that the expected estimated risk of the resulting model is minimized.
+
     :param f_u: a x 1 vector where a is the number of unlabeled instances.
                 Represents the minimum energy solution for unlabeled points.
     :param uu_inv: a x a matrix. Inverse matrix of the submatrix of unlabeled points
