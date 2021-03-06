@@ -2,27 +2,27 @@ import numpy as np
 import packages.zlg.zlg as zlg
 
 
-def test__calculate_weights_2():
-    X = np.array([[1, 2],
-                  [3, 4]])
-
-    # calculate expected
-    a = -1 / np.std(X)
-    inner = np.multiply(np.array([[0.0, 8.0], [8.0, 0.0]]), a)
-    expected = np.exp(inner)
-
-    actual = zlg._calculate_weights_2(X)
-    np.testing.assert_allclose(actual, expected, atol=1e-16)  # rounding errors cause problems with exact comparison
-
-
-def test__calculate_weights():
+def test__calculate_weights_1():
     X = np.array([[1, 2],
                   [3, 5]])
 
     expected = np.array([[1, np.exp(-8.0)],
                          [np.exp(-8.0), 1]])
-    actual = zlg._calculate_weights(X)
+    actual = zlg._calculate_weights_1(X)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test__calculate_weights_2():
+    X = np.array([[1, 2],
+                  [3, 4]])
+
+    # calculate expected
+    a = -1 / np.square(np.std(X))
+    inner = np.multiply(np.array([[0.0, 8.0], [8.0, 0.0]]), a)
+    expected = np.exp(inner)
+
+    actual = zlg._calculate_weights_2(X)
+    np.testing.assert_allclose(actual, expected, atol=1e-16)  # rounding errors cause problems with exact comparison
 
 
 def test__construct_weight_matrix():
@@ -55,15 +55,28 @@ def test__subtract_matrices():
     np.testing.assert_array_equal(actual, expected)
 
 
-# confirm this test
+# confirm this test is accurate
 def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
                   [3, 5]])
-    expected = np.array([[0.000152, -0.000152],
-                         [-0.000152, 0.000152]])
+    expected = np.array([[0.002625, -0.002625],
+                         [-0.002625, 0.002625]])
     actual = zlg.laplacian_matrix(X, t)
     np.testing.assert_allclose(actual, expected, atol=1e-06)
+
+
+def test__helper_square_submatrix():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    idx = [0, 3]  # select instance 1 and 4
+    expected = np.array([[1, 4],
+                         [13, 16]])
+
+    actual = zlg._helper_square_submatrix(L, idx)
+    np.testing.assert_array_equal(actual, expected)
 
 
 def test__construct_ll_two_selected():
@@ -141,6 +154,20 @@ def test__construct_uu_one_selected():
     expected = np.array([[1]])
 
     actual = zlg._construct_uu(L, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__helper_rectangular_submatrix():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 3]  # label instance 1 and 4
+    unlabeled = [1, 2]  # don't label instance 2 and 3
+    expected = np.array([[2, 3],
+                         [14, 15]])
+
+    actual = zlg._helper_rectangular_submatrix(L, labeled, unlabeled)
     np.testing.assert_array_equal(actual, expected)
 
 
@@ -290,7 +317,7 @@ def test_minimum_energy_solution():
     np.testing.assert_allclose(expected_uu_inv, actual_uu_inv, atol=1e-16)
 
 
-def test__add_point_to_f_u():
+def test__update_minimum_energy_solution():
     f_u = np.array([-2, 1])
 
     uu_inv = np.array([[-2, 1],
@@ -299,7 +326,7 @@ def test__add_point_to_f_u():
     y_k = 1
 
     expected = np.array([1, -2])
-    actual = zlg._add_point_to_f_u(f_u, uu_inv, k, y_k)
+    actual = zlg._update_minimum_energy_solution(f_u, uu_inv, k, y_k)
     np.testing.assert_array_equal(actual, expected)
 
 
