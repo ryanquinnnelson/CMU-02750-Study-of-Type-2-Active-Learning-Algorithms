@@ -3,20 +3,27 @@ Code provided to help implementation of DH.
 """
 
 import numpy as np
-import pandas as pd
+
 from scipy.cluster.hierarchy import linkage
-from sklearn.model_selection import train_test_split
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 import torch
-from torch.utils.data import Dataset, DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 from torch import optim
 
 
-# provided
-def load_data(filename, seed, filter_class):
+# I created
+# tested
+def generate_T(X):
     """
-    Loads data and computes linkage via hierarchical clustering.
+    Builds data structure T to contain linkage, subtree sizes, and subtrees.
+
+    |  T is a 3-element tree consisting of the following:
+    |  - T[0] = linkage matrix from hierarchical clustering.
+    |  - T[1] = An array denoting the size of each subtree rooted at node i, where i indexes the array.
+        i.e. The number of all leaves in subtree rooted at node i (w_i in the paper).
+    |  - T[2] = dict where keys are nodes and values are the node's parent.
 
     |
     Note 1: If hierarchical clustering is performed on 4 samples, the total number of nodes represented by Z is 5.
@@ -30,45 +37,19 @@ def load_data(filename, seed, filter_class):
     Hierarchical clustering does not record combining 0 and 5 to get 6, so the overall tree is missing 2 nodes.
 
 
-    :param filename: Path to the data file.
-    :param seed: Seed used in RNG.
-    :param filter_class: List of classes to keep in the dataset.
-    :return: (np.ndarray,np.ndarray,np.ndarray,np.ndarray, tree) Tuple represents
-            ( X_train, y_train, X_test, y_test, T) where T is a 3-element tree consisting of the following:
-            T[0] = linkage matrix from hierarchical clustering.
-            T[1] = An array denoting the size of each subtree rooted at node i, where i indexes the array.
-                   i.e. The number of all leaves in subtree rooted at node i (w_i in the paper).
-            T[2] = dict where keys are nodes and values are the node's parent.
+    :param X: n x m dataset
+    :return: List representing T
     """
-    # read data
-    df = pd.read_csv(filename)
 
-    # filter out samples which are not in filter_class
-    mask = df.Label == 0
-    for x in filter_class:
-        mask = mask | (df.Label == x)
-    df = df[mask]
-
-    # extract DataFrame features
-    X = df.iloc[:, :8].to_numpy()
-
-    # extract DataFrame labels
-    # encode labels
-    y = df.Label.astype('category').cat.codes.to_numpy()
-
-    # split data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=seed)
-
-    # build data structure T
     # perform hierarchical clustering over training set
-    Z = linkage(X_train, method='ward')
+    Z = linkage(X, method='ward')
 
     # build (n-1) x 2 linkage matrix where n is the number of instances in the training set
     # row i contains ids of clusters combined at ith iteration
     link = Z[:, :2].astype(int)
 
     # build subtrees for each node in the hierarchy
-    n_samples = len(X_train)
+    n_samples = len(X)
     n_nodes = link[-1, -1]  # the number of nodes generated via clustering - See Note 1
     n_subtree = n_nodes + 2  # add two additional nodes to account for final clustering - See Note 1
     subtree_sizes = np.zeros(n_subtree)  # scaffold to list number of leaves per subtree
@@ -90,11 +71,20 @@ def load_data(filename, seed, filter_class):
     # build data structure to access all components
     T = [link, subtree_sizes, parents]
 
-    return X_train, y_train, X_test, y_test, T
+    return T
 
 
 # I created
 def get_classifier(choice, X=None, y=None, seed=None):
+    """
+    Generates a classifier of the specified choice.
+
+    :param choice: String representing the desired classifier
+    :param X: Used to define Neural Network
+    :param y: Used to define Neural Network
+    :param seed: Used to define Random Forest, Gradient Boosting, Neural Network
+    :return: initialized model
+    """
     model = None
 
     if choice == 'Logistic Regression':
@@ -175,45 +165,44 @@ def get_classifier(choice, X=None, y=None, seed=None):
     return model
 
 
-# provided
-def compute_error(L, labels):
+# tested
+def compute_error(y_pred, y_true):
     """
     Compute the error
 
-    :param L: labeling of leaf nodes
-    :param labels: true labels of each node
+    :param y_pred: labeling of leaf nodes
+    :param y_true: true labels of each node
 
     :return: error of predictions
     """
 
-    wrong = 0
-    wrong = (L[:len(labels)] != labels).sum()
-    error = wrong / len(labels)
+    wrong = (y_pred[:len(y_true)] != y_true).sum()
+    error = wrong / len(y_true)
     return error
 
 
-def assign_labels(L, u, v, T, n_samples):
-    """Assign labels to every leaf according to the label of the subtree's root node
+def assign_labels(y_pred, u, v, T, n_samples):
+    """Assign labels to every leaf according to the label of the subtree's root node.
 
-    :param L: array of predicted labels for each node
+    :param y_pred: array of predicted labels for each node
     :param u: current node
     :param v: subtree's root node
-    :param T: tree- 3 element list, see dh.py for description
-    :param nsample: number of samples, 1000
+    :param T: data structure representing hierarchy
+    :param n_samples: number of samples
 
-    :returns L: array of predicted label for each node
+    :return: array of predicted labels for each node
     """
 
     link = T[0]
     if u < n_samples:
-        L[u] = L[v]
-        return L
+        y_pred[u] = y_pred[v]
     else:
         left = link[u - n_samples, 0]
-        L = assign_labels(L, left, v, T, n_samples)
+        y_pred = assign_labels(y_pred, left, v, T, n_samples)
         right = link[u - n_samples, 1]
-        L = assign_labels(L, right, v, T, n_samples)
-        return L
+        y_pred = assign_labels(y_pred, right, v, T, n_samples)
+
+    return y_pred
 
 
 def best_pruning_and_labeling(n, p1, v, T, n_samples):
