@@ -132,12 +132,13 @@ def laplacian_matrix(X, t):
     return L
 
 
+# tested
 def _construct_square_submatrix(L, idx):
     """
     Constructs square submatrix from the given Laplacian matrix. The process for submatrix ll and uu is exactly the
     same, only the list is different.
     Todo - Determine if sorting really needs to be performed.
-    :param L:
+    :param L: n x n matrix, Laplacian
     :param idx: list of zero-based indexes representing instance positions in the Laplacian matrix.
                     i.e. [0,2] if instance 1 and 3 are selected.
     :return: c x c matrix, where c is the number of indexes provided
@@ -162,8 +163,8 @@ def _construct_ll(L, labeled):
     """
     Constructs square (labeled,labeled) submatrix from the given Laplacian matrix.
 
-    :param L: n x n matrix
-    :param labeled: sorted list of zero-based indexes representing labeled instance positions in the Laplacian matrix.
+    :param L: n x n matrix, Laplacian
+    :param labeled: list of zero-based indexes representing labeled instance positions in the Laplacian matrix.
                     i.e. [0,2] if instance 1 and 3 are labeled.
     :return: b x b matrix, where b is the number of labeled instances
     """
@@ -175,63 +176,73 @@ def _construct_uu(L, unlabeled):
     """
     Constructs square (unlabeled,unlabeled) instances submatrix from the given Laplacian matrix.
 
-    :param L: n x n matrix
-    :param unlabeled: sorted list of indexes representing unlabeled instance positions in the Laplacian matrix.
+    :param L: n x n matrix, Laplacian
+    :param unlabeled: list of indexes representing unlabeled instance positions in the Laplacian matrix.
                         i.e. [0,2] if instance 1 and 3 are unlabeled.
     :return: a x a matrix, where a is the number of unlabeled instances
     """
     return _construct_square_submatrix(L, unlabeled)
 
 
+def _construct_rectangular_submatrix(L, idx_i, idx_j):
+    """
+    Constructs rectangular submatrix from the given Laplacian matrix.
+    Todo - Determine if sorting is really necessary.
+    :param L: n x n matrix, Laplacian
+    :param idx_i: list of indexes representing instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instance 1 and 3 are selected.
+                    Defines the rows in the submatrix.
+    :param idx_j: list of indexes representing instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instance 1 and 3 are selected.
+                        Defines the columns in the submatrix.
+    :return: i x j matrix, where i is the length of idx_i and j is the length of idx_j
+    """
+    # sort lists
+    idx_i_sorted = sorted(idx_i)
+    idx_j_sorted = sorted(idx_j)
+
+    # build scaffold
+    num_i = len(idx_i_sorted)
+    num_j = len(idx_j_sorted)
+    scaffold = np.zeros((num_i, num_j))
+
+    # all combinations of indexes
+    for idx1, i in enumerate(idx_i_sorted):
+        for idx2, j in enumerate(idx_j_sorted):
+            scaffold[idx1][idx2] = L[i][j]
+
+    return scaffold
+
+
 # tested
 def _construct_lu(L, labeled, unlabeled):
     """
-    Constructs the (labeled,unlabeled) instances submatrix.
-    Assumes labeled is sorted in ascending order.
-    Assumes labeled is not empty.
-    :param L: n x n matrix
-    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
-    :param unlabeled: sorted list of indices of unlabeled instances
+    Constructs rectangular (labeled,unlabeled) instances submatrix from the given Laplacian matrix.
+
+    :param L: n x n matrix, Laplacian
+    :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are labeled.
+    :param unlabeled: list of indexes representing unlabeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: b x a matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    num_labeled = len(labeled)
-    num_unlabeled = len(unlabeled)
-
-    # build lu scaffold
-    lu = np.zeros((num_labeled, num_unlabeled))
-
-    # generate
-    for idx1, i in enumerate(labeled):
-        for idx2, j in enumerate(unlabeled):
-            lu[idx1][idx2] = L[i][j]
-
-    return lu
+    return _construct_rectangular_submatrix(L, labeled, unlabeled)
 
 
 # tested
 def _construct_ul(L, labeled, unlabeled):
     """
-    Constructs the (unlabeled,labeled) instances submatrix.
-    Assumes labeled is sorted in ascending order.
-    Assumes labeled is not empty.
-    Todo - this is almost entirely the same as _construct_lu(). Consolidate code.
-    :param L: n x n matrix
-    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
-    :param unlabeled: sorted list of indices of unlabeled instances
+    Constructs rectangular (unlabeled,labeled) instances submatrix from the given Laplacian matrix.
+
+    :param L: n x n matrix, Laplacian
+    :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are labeled.
+    :param unlabeled: list of indexes representing unlabeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: a x b matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    num_labeled = len(labeled)
-    num_unlabeled = len(unlabeled)
+    _construct_rectangular_submatrix(L, unlabeled, labeled)
 
-    # build ul scaffold
-    ul = np.zeros((num_unlabeled, num_labeled))
-
-    # generate
-    for idx1, i in enumerate(unlabeled):
-        for idx2, j in enumerate(labeled):
-            ul[idx1][idx2] = L[i][j]
-
-    return ul
 
 
 # tested
