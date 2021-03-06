@@ -14,19 +14,22 @@ def _calculate_weights_1(X):
     Uses Radial Basis Function (RBF) to calculate weight w_ij for each pair of instances x_i and x_j using the
     formula:
 
-    w_ij = exp(  -1 * SUM_d (x_id - x_jd)^2 / σ^2_d )
-
-    where
-    - x_i is a m x 1 vector
-    - x_id is the d-th dimension of the instance x_i
-    - σ^2_d is the variance of the d-th column of X
-    - (x_id - x_jd)^2 is the squared Euclidean distance between x_i and x_j
+    |
+    |  w_ij = exp(  -1 * SUM_d (x_id - x_jd)^2 / σ^2_d )
+    |
+    |  where
+    |  - x_i is a m x 1 vector
+    |  - x_id is the d-th dimension of the instance x_i
+    |  - σ^2_d is the variance of the d-th column of X
+    |  - (x_id - x_jd)^2 is the squared Euclidean distance between x_i and x_j
+    |
 
     Note: This implementation divides each dimension term of a vector pair by the variance of that dimension as part of
     the summation, rather than multiple the entire sum by one variance value.
     See https://www.aaai.org/Papers/ICML/2003/ICML03-118.pdf).
     Todo - Find more efficient way to incorporate variance into terms. Really poor performance.
     Todo - Doesn't work correctly. Results in worse performance over time, and I'm not sure why yet.
+
     :param X: n x m matrix, where n is the number of samples and m is the number of features
     :return: n x n matrix
     """
@@ -60,12 +63,14 @@ def _calculate_weights_2(X):
     Uses Radial Basis Function (RBF) to calculate weight w_ij for each pair of instances x_i and x_j using the
     formula:
 
-    w_ij = exp(  -1/σ^2 * SUM_d (x_id - x_jd)^2  )
-
-    where
-    - x_i is a m x 1 vector
-    - x_id is the d-th dimension of the instance x_i
-    - (x_id - x_jd)^2 is the squared Euclidean distance between x_i and x_j
+    |
+    |  w_ij = exp(  -1/σ^2 * SUM_d (x_id - x_jd)^2  )
+    |
+    |  where
+    |  - x_i is a m x 1 vector
+    |  - x_id is the d-th dimension of the instance x_i
+    |  - (x_id - x_jd)^2 is the squared Euclidean distance between x_i and x_j
+    |
 
     Note: This method calculates a single scalar for variance over the entire data.
 
@@ -155,6 +160,7 @@ def _helper_square_submatrix(L, idx):
     Constructs square submatrix from the given Laplacian matrix. The process for submatrix ll and uu is exactly the
     same, only the list is different.
     Todo - Determine if sorting really needs to be performed.
+
     :param L: n x n matrix, Laplacian
     :param idx: list of zero-based indexes representing instance positions in the Laplacian matrix.
                     i.e. [0,2] if instance 1 and 3 are selected.
@@ -278,6 +284,7 @@ def _helper_rectangular_submatrix(L, idx_i, idx_j):
     """
     Constructs rectangular submatrix from the given Laplacian matrix.
     Todo - Determine if sorting is really necessary.
+
     :param L: n x n matrix, Laplacian
     :param idx_i: list of indexes representing instance positions in the Laplacian matrix.
                         i.e. [0,2] if instance 1 and 3 are selected.
@@ -421,12 +428,12 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
 
     |  | ll | lu |
     |  | ul | uu |
-
-    where
-    - ll are the (labeled,labeled) instances
-    - uu are the (unlabeled,unlabeled) instances
-    - lu are the (labeled, unlabeled) instances
-    - ul are the (unlabeled, labeled) instances
+    |
+    |  where
+    |  - ll are the (labeled,labeled) instances
+    |  - uu are the (unlabeled,unlabeled) instances
+    |  - lu are the (labeled, unlabeled) instances
+    |  - ul are the (unlabeled, labeled) instances
 
     :param L: n x n matrix, Laplacian
     :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
@@ -490,16 +497,19 @@ def _update_minimum_energy_solution(f_u, uu_inv, k, y_k):
     Calculates updated minimum energy solution for all unlabeled points if unlabeled point k is given label y_k.
     Uses the following formula:
 
-    f_u_plus_xk = f_u + (y_k - f_k) * uu_inv_{.k} * 1/uu_inv_{kk}
-
-    where
-    - f_u is the updated minimum energy solution of unlabeled points if instance x_k was labeled with y_k
-    - f_k is the current minimum energy solution of the kth unlabeled point
-    - uu_inv_{.k} is the kth column of the inverse Laplacian on unlabeled data
-    - uu_inv_{kk} is the kth diagonal element of the same matrix
+    |
+    |  f_u_plus_xk = f_u + (y_k - f_k) * uu_inv_{.k} * 1/uu_inv_{kk}
+    |
+    |  where
+    |  - f_u is the updated minimum energy solution of unlabeled points if instance x_k was labeled with y_k
+    |  - f_k is the current minimum energy solution of the kth unlabeled point
+    |  - uu_inv_{.k} is the kth column of the inverse Laplacian on unlabeled data
+    |  - uu_inv_{kk} is the kth diagonal element of the same matrix
+    |
 
     Todo - if statement needs testing
     Todo - Need to understand why some diagonals are zero. Is it a rounding error or bug somewhere else?
+
     :param f_u: a x 1 vector, where a is the number of unlabeled instances.
                 Represents the minimum energy solution for unlabeled points before adding point k.
     :param uu_inv: a x a matrix, inverse matrix of the submatrix of unlabeled points
@@ -528,11 +538,12 @@ def _expected_risk(f_u):
     Calculates the expected risk of all unlabeled instances in the given minimum energy solution.
     Uses the following formula:
 
-    Rhat(f_u) = SUM_i  min{  f_i, 1 - f_i  }
-
-    where
-    - i is the ith unlabeled instance in vector f_u (out of n)
-    - f_i is the minimum energy solution for the ith unlabeled instance
+    |
+    |  Rhat(f_u) = SUM_i  min{  f_i, 1 - f_i  }
+    |
+    |  where
+    |  - i is the ith unlabeled instance in vector f_u (out of n)
+    |  - f_i is the minimum energy solution for the ith unlabeled instance
 
     :param f_u: a x 1 vector where a is the number of unlabeled instances.
                 Represents the minimum energy solution for unlabeled points.
