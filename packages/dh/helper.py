@@ -198,11 +198,11 @@ def assign_labels(y_pred, u, root, T, n_samples):
     if u < n_samples:  # base case - u is a leaf node
         y_pred[u] = y_pred[root]
     else:
-        # assign labels to subtree rooted at left child of u
+        # recursive search subtree rooted at left child of u to find leaves
         left_child = link[u - n_samples, 0]
         y_pred = assign_labels(y_pred, left_child, root, T, n_samples)
 
-        # assign labels to subtree rooted at right child of u
+        # recursive search subtree rooted at right child of u to find leaves
         right_child = link[u - n_samples, 1]
         y_pred = assign_labels(y_pred, right_child, root, T, n_samples)
 
@@ -293,26 +293,31 @@ def best_pruning_and_labeling(n, p1, v, T, n_samples):
     return P_best, L_best
 
 
+# tested
 def get_leaves(leaves, v, T, n_samples):
-    """Get all leaf nodes in the subtree Tv rooted at v
+    """Get all leaf nodes in the subtree T_v rooted at v, recursively.
 
-    :param leaves: previously found leaves
+    :param leaves: previously found leaves. Supply empty list if this is the first iteration.
     :param v: current root node
-    :param T: Tree- 3 element list, see dh.py for description
-    :param n_samples: number of samples
+    :param T: data structure representing hierarchy
+    :param n_samples: number of samples in the hierarchy
 
-    :returns leaves: leaves in the subtree Tv rooted at v"""
+    :return: indexes of leaves in the subtree T_v rooted at v
+    """
 
     link = T[0]
-    if v < n_samples:
+    if v < n_samples:  # base case - v is a leaf node
         leaves.append(v)
-        return leaves
     else:
+        # recursively add leaves from left child of v
         left = link[v - n_samples, 0]
         leaves = get_leaves(leaves, left, T, n_samples)
+
+        # recursively add leaves from right child of v
         right = link[v - n_samples, 1]
         leaves = get_leaves(leaves, right, T, n_samples)
-        return leaves
+
+    return leaves
 
 
 def update_empirical(n, p1, v, z, l, T):

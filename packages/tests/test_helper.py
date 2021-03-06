@@ -92,3 +92,32 @@ def test_assign_labels_start_middle():
     expected = np.array([1,0,0,1,0,0,1])
     actual = helper.assign_labels(y_pred,u,v,T,n_samples)
     np.testing.assert_array_equal(actual, expected)
+
+
+def test_get_leaves_middle():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    leaves = []
+    n_samples = 4
+    v = 4
+    expected = [0,3]
+    actual = helper.get_leaves(leaves, v, T, n_samples)
+    assert actual == expected
+
+def test_get_leaves_root():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    leaves = []
+    n_samples = 4
+    v = 6
+    expected = [0,3,1,2]
+    actual = helper.get_leaves(leaves, v, T, n_samples)
+    assert actual == expected
