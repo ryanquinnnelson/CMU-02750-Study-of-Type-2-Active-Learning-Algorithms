@@ -243,7 +243,7 @@ def _calculate_confidence_lower_bounds(n, p1):
     Calculates lower bounds of label=0 and label=1 for each node v in V, using Wald's approximation.
 
     :param n: V x 1 vector, where n[v] is the number of points sampled from node v
-            and V is the number of nodes in T
+            and V is the number of nodes in Tv
     :param p1: V x 1 vector, where p1[v] is the fraction of label=1 in points sampled from Tv
     :return: (V x 1 vector,V x 1 vector) Tuple representing (p0_LB, p1_LB)
             where p0_LB[v] is the lower bounds confidence for labeling all leaves in Tv with 0,
@@ -309,36 +309,64 @@ def _estimate_pruning_error(p1, A0, A1):
     return e0_tilde, e1_tilde
 
 
-def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
+def _calculate_score(i, T, A0, A1, score0, score1, scores):
+
     # T components
     sizes_of_subtrees = T[1]
     parents = T[2]
 
+    parent = parents[i]
+    if parent == 0:
+        return  # we've reached the root node in Tv
+
+    # calculate score
+    wv = sizes_of_subtrees[i] / sizes_of_subtrees[parent]  # fraction of nodes in parent subtree which are in i
+    if A0[i]:
+        if np.isnan(score0[parent]):  # no score has been set for parent of i
+            score0[parent] = wv * scores[i]
+        else:
+            score0[parent] += wv * scores[i]
+
+    if A1[i]:
+        if np.isnan(score1[parent]):  # no score has been set for parent of i
+            score1[parent] = wv * scores[i]
+        else:
+            score1[parent] += wv * scores[i]
+
+
+def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
+    """
+
+    :param n: n x 1 vector
+    :param v:
+    :param T:
+    :param A0:
+    :param A1:
+    :param e0_tilde:
+    :param e1_tilde:
+    :return:
+    """
+
     # setup scaffold for scores
+    scores = np.zeros(len(n))
     score0 = np.full_like(n, np.nan)
     score1 = np.full_like(n, np.nan)
-    scores = np.zeros(len(n))
 
+    # calculate scores for all subtrees
     for i in range(len(n)):
-        parent = parents[i]
-        if parent == 0:
-            break
-        if A0[i]:
-            if np.isnan(score0[parent]):
-                score0[parent] = sizes_of_subtrees[i] / sizes_of_subtrees[parent] * scores[i]
-            else:
-                score0[parent] += sizes_of_subtrees[i] / sizes_of_subtrees[parent] * scores[i]
-        if A1[i]:
-            if np.isnan(score1[parent]):
-                score1[parent] = sizes_of_subtrees[i] / sizes_of_subtrees[parent] * scores[i]
-            else:
-                score1[parent] += sizes_of_subtrees[i] / sizes_of_subtrees[parent] * scores[i]
+
+        # calculate score for subtree rooted at i
+        _calculate_score(i, T, A0, A1, score0, score1, scores)
+
+        # find smallest score for subtree i
         possible_scores_tmp = [score0[i], score1[i], e0_tilde[i], e1_tilde[i]]
         scores[i] = np.nanmin(possible_scores_tmp)
 
+    # find smallest score for subtree Tv rooted at v
     possible_scores_tmp = [score0[-1], score1[-1], e0_tilde[-1], e1_tilde[-1]]
     scores[-1] = np.nanmin(possible_scores_tmp)
 
+    # get the index of the min score
     scores_tmp = [score0[v], score1[v], e0_tilde[v], e1_tilde[v]]
     best = np.nanargmin(scores_tmp)
 

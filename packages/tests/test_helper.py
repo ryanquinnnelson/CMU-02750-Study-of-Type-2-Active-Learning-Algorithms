@@ -241,3 +241,52 @@ def test__estimate_pruning_error():
     np.testing.assert_allclose(actual[1], expected[1], atol=1e-16)
 
 
+def test__calculate_score_root_node():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    i = 6
+    n = np.array([1,1,1,1,1,1])
+    A0 = np.array([True, False, True, True])
+    A1 = np.array([False, True, False, True])
+    score0=np.full_like(n, np.nan)
+    score1=np.full_like(n, np.nan)
+    scores =np.zeros(len(n))
+
+    helper._calculate_score(i, T, A0, A1, score0, score1, scores)
+    np.testing.assert_array_equal(score0, np.full_like(6, np.nan))
+    np.testing.assert_array_equal(score1, np.full_like(6, np.nan))
+    np.testing.assert_array_equal(scores, np.zeros(6))
+
+
+def test__calculate_score_leaf_node_parent_nan():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    i = 0
+    n = np.array([1, 1, 1, 1, 1, 1])
+    A0 = np.array([True, False, True, True,True, True])
+    A1 = np.array([False, True, False, True, False,False])
+    score0=np.full_like(n, np.nan)
+    score1=np.full_like(n, np.nan)
+    scores =np.zeros(len(n))
+
+    # generate expected
+    expected_score0 = np.full_like(n, np.nan)
+    expected_score0[4] = 0.0
+
+    helper._calculate_score(i, T, A0, A1, score0, score1, scores)
+    print(score0)
+    1/0
+    # np.testing.assert_array_equal(score0, expected_score0, atol=1e-16)
+    # np.testing.assert_array_equal(score1, np.full_like(n, np.nan), atol=1e-16)
+    # np.testing.assert_array_equal(scores, np.zeros(len(n)), atol=1e-16)
+
+
+
