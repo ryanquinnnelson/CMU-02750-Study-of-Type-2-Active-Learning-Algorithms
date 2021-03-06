@@ -60,8 +60,8 @@ def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
                   [3, 5]])
-    expected = np.array([[ 0.002625, -0.002625],
-              [-0.002625,  0.002625]])
+    expected = np.array([[0.002625, -0.002625],
+                         [-0.002625, 0.002625]])
     actual = zlg.laplacian_matrix(X, t)
     np.testing.assert_allclose(actual, expected, atol=1e-06)
 

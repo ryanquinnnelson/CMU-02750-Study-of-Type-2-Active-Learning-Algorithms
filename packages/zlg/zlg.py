@@ -566,11 +566,11 @@ def zlg_query(f_u, uu_inv, num_labeled, num_samples):
     Chooses an instance to label such that the expected estimated risk of the resulting model is minimized.
     :param f_u: a x 1 vector where a is the number of unlabeled instances.
                 Represents the minimum energy solution for unlabeled points.
-    :param uu_inv: a x a matrix.
-                    Inverse matrix of the submatrix of unlabeled points from the rearranged Laplacian matrix.
+    :param uu_inv: a x a matrix. Inverse matrix of the submatrix of unlabeled points
+                    from the rearranged Laplacian matrix.
     :param num_labeled: scalar, number of labeled points
-    :param num_samples: scalar, number of samples
-    :return: scalar, index of the unlabeled point to query
+    :param num_samples: scalar, number of instances
+    :return: scalar, index of the unlabeled point to query relative to f_u
     """
     query_idx = -1
     min_Rhat = np.inf
