@@ -75,7 +75,7 @@ def test__construct_square_submatrix():
     expected = np.array([[1, 4],
                          [13, 16]])
 
-    actual = zlg._construct_ll(L, idx)
+    actual = zlg._construct_square_submatrix(L, idx)
     np.testing.assert_array_equal(actual, expected)
 
 
@@ -156,6 +156,19 @@ def test__construct_uu_one_selected():
     actual = zlg._construct_uu(L, unlabeled)
     np.testing.assert_array_equal(actual, expected)
 
+
+def test__construct_rectangular_submatrix():
+    L = np.array([[1, 2, 3, 4],
+                  [5, 6, 7, 8],
+                  [9, 10, 11, 12],
+                  [13, 14, 15, 16]])
+    labeled = [0, 3]  # label instance 1 and 4
+    unlabeled = [1, 2]  # don't label instance 2 and 3
+    expected = np.array([[2, 3],
+                         [14, 15]])
+
+    actual = zlg._construct_rectangular_submatrix(L, labeled, unlabeled)
+    np.testing.assert_array_equal(actual, expected)
 
 def test__construct_lu_two_selected():
     L = np.array([[1, 2, 3, 4],

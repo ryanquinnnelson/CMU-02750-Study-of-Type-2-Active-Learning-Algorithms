@@ -184,6 +184,7 @@ def _construct_uu(L, unlabeled):
     return _construct_square_submatrix(L, unlabeled)
 
 
+
 def _construct_rectangular_submatrix(L, idx_i, idx_j):
     """
     Constructs rectangular submatrix from the given Laplacian matrix.
