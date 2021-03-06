@@ -93,19 +93,20 @@ def load_data(filename, seed, filter_class):
     return X_train, y_train, X_test, y_test, T
 
 
-def get_classifier(X, y, choice, seed=None):
+def get_classifier(choice, X=None, y=None, seed=None):
     model = None
 
     if choice == 'Logistic Regression':
         lr = LogisticRegression()
-        model = lr.fit(X, y)
+        model = lr
 
     elif choice == 'Random Forest':
         N_estimator_rf = 20
         MAX_depth_rf = 6
         rf = RandomForestClassifier(n_estimators=N_estimator_rf,
-                                    max_depth=MAX_depth_rf, random_state=seed)
-        model = rf.fit(X, y)
+                                    max_depth=MAX_depth_rf,
+                                    random_state=seed)
+        model = rf
 
     elif choice == 'Gradient Boosting Decision Tree':
         N_estimator_gbdt = 20
@@ -114,7 +115,7 @@ def get_classifier(X, y, choice, seed=None):
                                           learning_rate=0.1,
                                           max_depth=gbdt_max_depth,
                                           random_state=seed)
-        model = gbdt.fit(X, y)
+        model = gbdt
 
     elif choice == 'Neural Net':
 
@@ -159,6 +160,7 @@ def get_classifier(X, y, choice, seed=None):
                         loss_record = 0.0
                     if epoch_i >= epoches:
                         break
+                return self
 
             def score(self, X_test, y_test):
                 X_test_tensor = torch.from_numpy(X_test.astype(np.float32))
@@ -167,7 +169,6 @@ def get_classifier(X, y, choice, seed=None):
                 return (y_output == y_test).mean()
 
         nn = NNClassifier(feature_n=X.shape[1], class_n=len(np.unique(y)))
-        nn.fit(X, y)
         model = nn
 
     return model
