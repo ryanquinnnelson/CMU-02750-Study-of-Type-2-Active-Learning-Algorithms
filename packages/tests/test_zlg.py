@@ -55,7 +55,7 @@ def test__subtract_matrices():
     np.testing.assert_array_equal(actual, expected)
 
 
-# confirm this test
+# confirm this test is accurate
 def test_laplacian_matrix():
     t = 0.0
     X = np.array([[1, 2],
