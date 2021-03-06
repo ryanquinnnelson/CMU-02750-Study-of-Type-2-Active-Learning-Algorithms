@@ -36,6 +36,7 @@ def generate_T(X):
     |  Stop - sample 0 is not given a node because we know the final clustering is 0 and 5.
     Hierarchical clustering does not record combining 0 and 5 to get 6, so the overall tree is missing 2 nodes.
 
+    Todo - set root node parent as -1 instead of 0 to avoid confusion
 
     :param X: n x m dataset
     :return: List representing T
@@ -320,24 +321,28 @@ def get_leaves(leaves, v, T, n_samples):
     return leaves
 
 
-def update_empirical(n, p1, v, z, l, T):
-    ''' Update empirical counts and probabilities for all nodes u on path
-
+# ?? why can't z be zero? there is a leaf node 0
+# tested
+def update_empirical(n, p1, v, z, label_z, T):
+    """
+    Update empirical counts and probabilities for all nodes u on path between nodes z and v
+    if every node u in path is assigned the given label.
+    
     :param n: array with number of points sampled in the subtree rooted at each node
-    :param p1: array with fraction of label = 1 in the subtree rooted at each node
-    :param v: selected subtree Tv's root node
-    :param z: selected leaf node in subtree Tv
-    :param l: queried label for node z
-    :param T: tree- 3 element list, see dh.py for details
-
-    :returns n: array with updated number of points sampled in the subtree rooted at each node
-    :returns p1: array with updated fraction of label = 1 in the subtree rooted at each node
-    '''
+    :param p1: array with fraction of label = 1 in the subtree rooted at each node 
+    :param v:  root node of selected subtree T_v
+    :param z: selected leaf node in subtree T_vv
+    :param label_z: queried label for node z
+    :param T: data structure representing hierarchy
+    :return: (array,array) Tuple representing (n,p1) where
+            n is an array with updated number of points sampled in the subtree rooted at each node;
+            p1 is an array with updated fraction of label = 1 in the subtree rooted at each node
+    """
 
     parents = T[2]
-    while z <= v and z != 0:
-        l1 = n[z] * p1[z]
+    while z <= v and z != 0:  # for each node in path between z and v
+        l1_prev = n[z] * p1[z]
         n[z] += 1
-        p1[z] = (l1 + l) / n[z]
-        z = np.array([parents[int(z)]])
+        p1[z] = (l1_prev + label_z) / n[z]
+        z = np.array([parents[int(z)]])  # get parent
     return n, p1
