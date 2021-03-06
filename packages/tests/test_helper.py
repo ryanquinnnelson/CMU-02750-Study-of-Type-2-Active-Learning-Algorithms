@@ -204,3 +204,40 @@ def test_update_empirical_multiple_steps():
     actual = helper.update_empirical(n_prev, p1_prev, v, z, label_z, T)
     np.testing.assert_array_equal(actual[0], expected[0])
     np.testing.assert_array_equal(actual[1], expected[1])
+
+
+def test__calculate_confidence_lower_bounds():
+    n = np.array([100, 100, 100, 100])
+    p1 = np.array([0.9, 0.8, 0.4, 0.6])
+
+    wald_term = np.array([0.01, 0.01,0.01,0.01]) + np.sqrt(p1 * (1 - p1) / n)
+    p0_LB = (1 - p1) - wald_term
+    p1_LB = p1 - wald_term
+
+    expected = p0_LB, p1_LB
+    actual = helper._calculate_confidence_lower_bounds(n, p1)
+    np.testing.assert_array_equal(actual[0], expected[0])
+    np.testing.assert_array_equal(actual[1], expected[1])
+
+
+def test__identify_admissible_sets():
+    p0 = np.array([0.1, 0.8, 0.2, 0.6])
+    p1 = 1-p0
+
+    expected = np.array([False, True, False, True]), np.array([True, False, True, True])
+    actual = helper._identify_admissible_sets(p0, p1)
+    np.testing.assert_array_equal(actual[0], expected[0])
+    np.testing.assert_array_equal(actual[1], expected[1])
+
+
+def test__estimate_pruning_error():
+    p1 = np.array([0.9, 0.2, 0.8, 0.4])
+    A0 = np.array([True, False, True, True])
+    A1 = np.array([False, True, False, True])
+
+    expected = np.array([0.1, 1, 0.2, 0.6]), np.array([1, 0.8, 1, 0.6 ])
+    actual = helper._estimate_pruning_error(p1, A0, A1)
+    np.testing.assert_allclose(actual[0], expected[0], atol=1e-16)  # rounding error
+    np.testing.assert_allclose(actual[1], expected[1], atol=1e-16)
+
+
