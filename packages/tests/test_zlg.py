@@ -170,6 +170,7 @@ def test__helper_rectangular_submatrix():
     actual = zlg._helper_rectangular_submatrix(L, labeled, unlabeled)
     np.testing.assert_array_equal(actual, expected)
 
+
 def test__construct_lu_two_selected():
     L = np.array([[1, 2, 3, 4],
                   [5, 6, 7, 8],
@@ -316,7 +317,7 @@ def test_minimum_energy_solution():
     np.testing.assert_allclose(expected_uu_inv, actual_uu_inv, atol=1e-16)
 
 
-def test__add_point_to_f_u():
+def test__update_minimum_energy_solution():
     f_u = np.array([-2, 1])
 
     uu_inv = np.array([[-2, 1],
@@ -325,7 +326,7 @@ def test__add_point_to_f_u():
     y_k = 1
 
     expected = np.array([1, -2])
-    actual = zlg._add_point_to_f_u(f_u, uu_inv, k, y_k)
+    actual = zlg._update_minimum_energy_solution(f_u, uu_inv, k, y_k)
     np.testing.assert_array_equal(actual, expected)
 
 

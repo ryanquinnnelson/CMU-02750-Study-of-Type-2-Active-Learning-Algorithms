@@ -399,10 +399,11 @@ def _construct_ul(L, labeled, unlabeled):
 # tested
 def _rearrange_laplacian_matrix(L, labeled, unlabeled):
     """
-    Rearranges the cells of the matrix by grouping labeled and unlabeled instances together in a specific pattern.
+    Rearranges the cells of the Laplacian matrix by grouping labeled and unlabeled instances into submatrices and
+    combining the submatrices back together in a specific pattern. See subroutines for additional details.
 
-    ll  lu
-    ul  uu
+    |  | ll | lu |
+    |  | ul | uu |
 
     where
     - ll are the (labeled,labeled) instances
@@ -410,9 +411,11 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
     - lu are the (labeled, unlabeled) instances
     - ul are the (unlabeled, labeled) instances
 
-    :param L: n x n matrix
-    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
-    :param unlabeled: sorted list of indices of unlabeled instances
+    :param L: n x n matrix, Laplacian
+    :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are labeled.
+    :param unlabeled: list of indexes representing unlabeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: n x n matrix
     """
     # rearrange cells into sub-matrices
@@ -430,20 +433,28 @@ def _rearrange_laplacian_matrix(L, labeled, unlabeled):
 # tested
 def minimum_energy_solution(L, labeled, unlabeled, f_l):
     """
-    Calculates minimum energy solution f_u for all unlabeled instances.
+    Calculates minimum energy solution f_u for all unlabeled instances using the given formula:
 
-    :param L: n x n matrix
-    :param labeled: sorted list of indices of labeled instances i.e. [0,2] if instance 1 and 3 are labeled.
-    :param unlabeled: sorted list of indices of unlabeled instances
-    :param f_l: b x 1 vector of labeled instances, where b is the number of labeled instances
-    :return: (a x 1 vector, a x b matrix) Tuple where a is the number of unlabeled instances.
-            Tuple represents (f_u, uu_inv).
+    f_u = -1 * uu_inv * ul * f_l
+
+    where
+    - uu_inv is the inverted (unlabeled, unlabeled) submatrix generated from the Laplacian.
+    - ul is the (unlabeled, labeled) submatrix generated from the Laplacian.
+    - f_u is the mean values on unlabeled data.
+
+    :param L: n x n matrix, Laplacian
+    :param labeled: list of indexes representing labeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are labeled.
+    :param unlabeled: list of indexes representing unlabeled instance positions in the Laplacian matrix.
+                        i.e. [0,2] if instances 1 and 3 are unlabeled.
+    :param f_l: b x 1 vector of labeled instances, where b is the number of labeled instances.
+    :return: (a x 1 vector, a x b matrix) Tuple which represents (f_u, uu_inv).
     """
-    # rearrange cells into sub-matrices
+    # rearrange cells into submatrices
     uu = _construct_uu(L, unlabeled)  # a x a matrix
     ul = _construct_ul(L, labeled, unlabeled)  # a x b matrix
 
-    # calculate minimum
+    # calculate minimum solution
     uu_inv = np.linalg.inv(uu)  # a x a matrix
     temp = np.matmul(-1.0 * uu_inv, ul)  # a x b matrix
     f_u = np.matmul(temp, f_l)  # a x 1 vector
@@ -451,16 +462,27 @@ def minimum_energy_solution(L, labeled, unlabeled, f_l):
     return f_u, uu_inv
 
 
-def _add_point_to_f_u(f_u, uu_inv, k, y_k):
+def _update_minimum_energy_solution(f_u, uu_inv, k, y_k):
     """
-    Calculates updated minimum energy solution for all unlabeled points, if unlabeled point k is given label y_k.
+    Calculates updated minimum energy solution for all unlabeled points if unlabeled point k is given label y_k.
+    Uses the following formula:
+
+    f_u_plus_xk = f_u + (y_k - f_k) * uu_inv_{.k} * 1/uu_inv_{kk}
+
+    where
+    - f_u_plus_xk is f_u with (x_k,y_k) added
+    - f_k is the kth value in f_u
+    - uu_inv_{.k} is the kth column of the inverse Laplacian on unlabeled data
+    - uu_inv_{kk} is the kth diagonal element of the same matrix
+
     Todo - if statement needs testing
-    :param f_u: a x 1 vector where a is the number of unlabeled instances.
-                Represents the minimum energy solution for unlabeled points.
-    :param uu_inv: a x a matrix.
-                    Inverse matrix of the submatrix of unlabeled points from the rearranged Laplacian matrix.
+    Todo - Need to understand why some diagonals are zero. Is it a rounding error or bug somewhere else?
+    :param f_u: a x 1 vector, where a is the number of unlabeled instances.
+                Represents the minimum energy solution for unlabeled points before adding point k.
+    :param uu_inv: a x a matrix, inverse matrix of the submatrix of unlabeled points
+                from the rearranged Laplacian matrix.
     :param k: scalar, index of one unlabeled instance with respect to uu_inv
-    :param y_k: scalar, hypothetical label to assign to unlabeled instance
+    :param y_k: scalar, hypothetical label to assign to unlabeled instance k
     :return: a x 1 vector, representing the updated minimum energy solution
     """
 
@@ -468,8 +490,8 @@ def _add_point_to_f_u(f_u, uu_inv, k, y_k):
     kth_col = uu_inv[:, k]
     kth_diag = uu_inv[k, k]
 
-    if kth_diag == 0:
-        f_u_plus_xk = f_u  # no change
+    if kth_diag == 0:  # unexpected issue
+        f_u_plus_xk = f_u  # no change as temporary workaround
     else:
         change = (y_k - f_k) * kth_col / kth_diag
         f_u_plus_xk = f_u + change
@@ -481,12 +503,22 @@ def _add_point_to_f_u(f_u, uu_inv, k, y_k):
 def _expected_risk(f_u):
     """
     Calculates the expected risk of all unlabeled instances in the given minimum energy solution.
+    Uses the following formula:
+
+    Rhat(f_u) = SUM_i  min{  f_i, 1 - f_i  }
+
+    where
+    - i is the ith unlabeled instance in vector f_u (out of n)
+    - f_i is the minimum energy solution for the ith unlabeled instance
+
     :param f_u: a x 1 vector where a is the number of unlabeled instances.
                 Represents the minimum energy solution for unlabeled points.
     :return: scalar
     """
-    # for each unlabeled point
+
     total = 0.0
+
+    # add minimum energy for each unlabeled point in f_u
     for i in range(f_u.shape[0]):
         min_i = min(f_u[i], 1 - f_u[i])
         total += min_i
@@ -497,7 +529,15 @@ def _expected_risk(f_u):
 # tested
 def expected_estimated_risk(f_u, uu_inv, k):
     """
-    Calculates expected risk after querying node k.
+    Calculates expected risk after querying node k. Uses the following formula:
+
+    Rhat(f_u_plus_xk) = (1 - f_k) * Rhat(f_u_plus_xk0) + f_k * Rhat(f_u_plus_xk1)
+
+    where
+    - f_u_plus_xk is f_u plus newly labeled instance x_k
+    - f_k is the kth unlabled instance in f_u
+    - f_u_plus_xk0 is f_u plus newly labeled instance x_k if y_k = 0
+    - f_u_plus_xk1 is f_u plus newly labeled instance x_k if y_k = 1
 
     :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
     :param k: index of one unlabeled point with respect to uu_inv
@@ -506,16 +546,16 @@ def expected_estimated_risk(f_u, uu_inv, k):
     """
 
     # expected risk if label y_k = 0
-    f_u_plus_xk0 = _add_point_to_f_u(f_u, uu_inv, k, y_k=0)
+    f_u_plus_xk0 = _update_minimum_energy_solution(f_u, uu_inv, k, y_k=0)
     Rhat_f_plus_xk0 = _expected_risk(f_u_plus_xk0)
 
     # expected risk if label y_k = 1
-    f_u_plus_xk1 = _add_point_to_f_u(f_u, uu_inv, k, y_k=1)
+    f_u_plus_xk1 = _update_minimum_energy_solution(f_u, uu_inv, k, y_k=1)
     Rhat_f_plus_xk1 = _expected_risk(f_u_plus_xk1)
 
     # estimated expected risk
     f_k = f_u[k]
-    Rhat_f_plus_xk = (1 - f_k) * Rhat_f_plus_xk0 + f_k * Rhat_f_plus_xk1
+    Rhat_f_plus_xk = (1.0 - f_k) * Rhat_f_plus_xk0 + f_k * Rhat_f_plus_xk1
 
     return Rhat_f_plus_xk
 
