@@ -1,3 +1,7 @@
+"""
+Code provided to help implementation of DH.
+"""
+
 import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import linkage
@@ -95,12 +99,14 @@ def get_classifier(X, y, choice, seed=None):
     if choice == 'Logistic Regression':
         lr = LogisticRegression()
         model = lr.fit(X, y)
+
     elif choice == 'Random Forest':
         N_estimator_rf = 20
         MAX_depth_rf = 6
         rf = RandomForestClassifier(n_estimators=N_estimator_rf,
                                     max_depth=MAX_depth_rf, random_state=seed)
         model = rf.fit(X, y)
+
     elif choice == 'Gradient Boosting Decision Tree':
         N_estimator_gbdt = 20
         gbdt_max_depth = 6
@@ -109,9 +115,10 @@ def get_classifier(X, y, choice, seed=None):
                                           max_depth=gbdt_max_depth,
                                           random_state=seed)
         model = gbdt.fit(X, y)
+
     elif choice == 'Neural Net':
 
-        # 3-Layer fully connected NN
+        # 3-layer fully connected neural network
         torch.manual_seed(seed)
 
         class NNClassifier(object):
@@ -148,7 +155,7 @@ def get_classifier(X, y, choice, seed=None):
                         optimizer.step()
                         loss_record += loss.item()
                     if epoch_i % report_epoch == report_epoch - 1:
-                        print("[%d|%d] epoch loss:%.2f" % (epoch_i + 1, epoches, loss_record / report_epoch))
+                        # print("[%d|%d] epoch loss:%.2f" % (epoch_i + 1, epoches, loss_record / report_epoch))
                         loss_record = 0.0
                     if epoch_i >= epoches:
                         break
@@ -160,6 +167,7 @@ def get_classifier(X, y, choice, seed=None):
                 return (y_output == y_test).mean()
 
         nn = NNClassifier(feature_n=X.shape[1], class_n=len(np.unique(y)))
-        model = nn.fit(X, y)
+        nn.fit(X, y)
+        model = nn
 
     return model
