@@ -241,7 +241,7 @@ def _construct_ul(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: a x b matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    _construct_rectangular_submatrix(L, unlabeled, labeled)
+    return _construct_rectangular_submatrix(L, unlabeled, labeled)
 
 
 
