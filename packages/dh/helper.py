@@ -181,26 +181,30 @@ def compute_error(y_pred, y_true):
     return error
 
 
-def assign_labels(y_pred, u, v, T, n_samples):
-    """Assign labels to every leaf according to the label of the subtree's root node.
+# tested
+def assign_labels(y_pred, u, root, T, n_samples):
+    """Assigns label of root node to every leaf in its subtree.
 
     :param y_pred: array of predicted labels for each node
     :param u: current node
-    :param v: subtree's root node
+    :param root: subtree's root node
     :param T: data structure representing hierarchy
-    :param n_samples: number of samples
+    :param n_samples: number of samples in the hierarchy
 
     :return: array of predicted labels for each node
     """
 
     link = T[0]
-    if u < n_samples:
-        y_pred[u] = y_pred[v]
+    if u < n_samples:  # base case - u is a leaf node
+        y_pred[u] = y_pred[root]
     else:
-        left = link[u - n_samples, 0]
-        y_pred = assign_labels(y_pred, left, v, T, n_samples)
-        right = link[u - n_samples, 1]
-        y_pred = assign_labels(y_pred, right, v, T, n_samples)
+        # assign labels to subtree rooted at left child of u
+        left_child = link[u - n_samples, 0]
+        y_pred = assign_labels(y_pred, left_child, root, T, n_samples)
+
+        # assign labels to subtree rooted at right child of u
+        right_child = link[u - n_samples, 1]
+        y_pred = assign_labels(y_pred, right_child, root, T, n_samples)
 
     return y_pred
 
