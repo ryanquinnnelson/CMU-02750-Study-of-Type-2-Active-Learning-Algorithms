@@ -16,9 +16,16 @@ def _calculate_weights_1(X):
 
     w_ij = exp(  -1 * SUM_d (x_id - x_jd)^2 / σ^2_d )
 
+    where
+    - x_i is a m x 1 vector
+    - x_id is the d-th dimension of the instance x_i
+    - σ^2_d is the variance of the d-th column of X
+    - (x_id - x_jd)^2 is the squared Euclidean distance between x_i and x_j
+
     Note: This implementation divides each dimension term of a vector pair by the variance of that dimension as part of
     the summation, rather than multiple the entire sum by one variance value.
-    Todo - Find more efficient way to calculate this. Currently O(n^3).
+    See https://www.aaai.org/Papers/ICML/2003/ICML03-118.pdf).
+    Todo - Find more efficient way to incorporate variance into terms. Currently O(n^3).
     :param X: n x m matrix, where n is the number of samples and m is the number of features
     :return: n x n matrix
     """
@@ -53,6 +60,11 @@ def _calculate_weights_2(X):
     formula:
 
     w_ij = exp(  -1/σ^2 * SUM_d (x_id - x_jd)^2  )
+
+    where
+    - x_i is a m x 1 vector
+    - x_id is the d-th dimension of the instance x_i
+    - (x_id - x_jd)^2 is the squared Euclidean distance between x_i and x_j
 
     Note: This method calculates a single scalar for variance over the entire data.
 
@@ -470,8 +482,8 @@ def _update_minimum_energy_solution(f_u, uu_inv, k, y_k):
     f_u_plus_xk = f_u + (y_k - f_k) * uu_inv_{.k} * 1/uu_inv_{kk}
 
     where
-    - f_u_plus_xk is f_u with (x_k,y_k) added
-    - f_k is the kth value in f_u
+    - f_u is the updated minimum energy solution of unlabeled points if instance x_k was labeled with y_k
+    - f_k is the current minimum energy solution of the kth unlabeled point
     - uu_inv_{.k} is the kth column of the inverse Laplacian on unlabeled data
     - uu_inv_{kk} is the kth diagonal element of the same matrix
 
@@ -534,10 +546,10 @@ def expected_estimated_risk(f_u, uu_inv, k):
     Rhat(f_u_plus_xk) = (1 - f_k) * Rhat(f_u_plus_xk0) + f_k * Rhat(f_u_plus_xk1)
 
     where
-    - f_u_plus_xk is f_u plus newly labeled instance x_k
-    - f_k is the kth unlabled instance in f_u
-    - f_u_plus_xk0 is f_u plus newly labeled instance x_k if y_k = 0
-    - f_u_plus_xk1 is f_u plus newly labeled instance x_k if y_k = 1
+    - f_u_plus_xk is the updated minimum energy solution of unlabeled points if instance x_k was labeled
+    - f_k is the current minimum energy solution of the kth unlabeled point
+    - f_u_plus_xk0 is the updated minimum energy solution of unlabeled points if instance x_k was labeled y_k=0
+    - f_u_plus_xk1 is the updated minimum energy solution of unlabeled points if instance x_k was labeled y_k=1
 
     :param uu_inv: Inverse matrix of the submatrix of unlabeled points in the rearranged Laplacian matrix.
     :param k: index of one unlabeled point with respect to uu_inv
