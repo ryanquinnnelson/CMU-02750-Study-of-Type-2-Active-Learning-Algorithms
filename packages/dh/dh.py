@@ -5,31 +5,33 @@ import random
 
 # ?? num_samples is correct here?
 # ?? is the pruning defined by its subtrees
-def _select_random_subtree(P, T, num_samples):
+# ?? does every node have a change of being selected
+def _select_random_node(T, num_samples):
     """
     From all of the nodes representing subtrees in this pruning, selects one at random, in proportion to the leaves of
     that subtree vs. the leaves in the tree:
     p_v = num_leaves_v / num_leaves_T
 
-    :param P: pruning
     :param T: Tree data structure
-    :param num_samples: number of samples in the data
+    :param num_nodes: number of samples in the data
     :return: index of the selected subtree
     """
-    # get nodes representing the root of the subtrees in this pruning
-    link = T[0]
-    subtrees = []
-    for v in P:
-        left = link[v - num_samples, 0]  # root of left subtree
-        right = link[v - num_samples, 1]  # root of right subtree
-        subtrees.append(left)
-        subtrees.append(right)
+    num_nodes = len(T[1])
+    nodes = [i for i in range(num_nodes)]
+    leaves_node = np.zeros(num_nodes)
 
-    # choose a subtree randomly using weighted proportions
-    sizes_of_subtrees = T[1]
-    sizes_of_subtrees_in_P = sizes_of_subtrees[subtrees]  # limit only to subtrees in this pruning
-    p = sizes_of_subtrees_in_P / num_samples  # weight for each subtree in this pruning
-    return np.random.choice(subtrees, 1, p=p)
+    for node in nodes:
+        # count number of leaves for each node
+        leaves = helper.get_leaves([], node, T, num_samples)
+        leaves_node[node] = len(leaves)
+
+    # weight for each subtree in this pruning
+    p = leaves_node / num_nodes
+    scale = sum(p)
+    p = leaves_node / num_nodes / scale
+
+    selected = np.random.choice(nodes, 1, p=p)
+    return selected[0]
 
 
 def select_case_1(X, y_true, T, budget, batch_size):
@@ -59,15 +61,14 @@ def select_case_1(X, y_true, T, budget, batch_size):
     root = num_nodes - 1  # index of root
     P = np.array([root])
     L[root] = 1
-
     for i in range(budget):
 
         # select a batch of subtrees (root nodes of subtrees)
-        selected_nodes = []
+        selected_nodes = set()
         for b in range(batch_size):
-            # TODO: select a node from P proportional to the size of subtree rooted at each node (DONE)
-            v = _select_random_subtree(P, T, num_samples)
-            selected_nodes.append(v)
+            # TODO: select a node from P proportional to the size of subtree rooted at each node
+            v = _select_random_node(T, num_samples)
+            selected_nodes.add(v)
 
             # TODO: pick a random leaf node from subtree Tv and query its label (DONE)
             v_leaves = helper.get_leaves([], v, T, num_samples)
@@ -77,14 +78,13 @@ def select_case_1(X, y_true, T, budget, batch_size):
             # TODO: update empirical counts and probabilities for all nodes u on path from z to v (DONE)
             n, pHat1 = helper.update_empirical(n, pHat1, v, z, label_z, T)
 
-        # use selected subtrees to update pruning and labels
         for s in selected_nodes:
             # TODO: update admissible A and compute scores; find best pruning and labeling (DONE)
             P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, s, T, num_samples)
 
             # TODO: update pruning P and labeling L
-            P_without_s = np.delete(P, s)  # remove s from pruning P
-            P = np.union1d(P_without_s, P_best)  # union P_best
+            # update pruning
+            P = np.union1d(P, P_best)  # ?? how do I remove s from P when s was never in P?
 
             # assign label L_best to all u in P_best
             for u in P_best:
