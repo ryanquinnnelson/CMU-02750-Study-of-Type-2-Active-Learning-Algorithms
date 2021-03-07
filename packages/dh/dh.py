@@ -1,29 +1,20 @@
 import numpy as np
 import packages.dh.helper as helper
 
-def select_case_1(data, labels, T, budget, batch_size):
-    """DH algorithm where we choose P proportional to the size of subtree rooted at each node
 
-    :param data: Data matrix 1200x8
-    :param labels: true labels 1200x1
-    :param T: 3 element tree
-        T[0] = linkage matrix from hierarchical clustering.  See https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html
-               for details. If you are unfamiliar with hierarchical clustering using scipy, the following is another helpful resource (We won't use dendrograms
-               here, but he gives a nice explanation of how to interpret the linkage matrix):
-               https://joernhees.de/blog/2015/08/26/scipy-hierarchical-clustering-and-dendrogram-tutorial/
-
-        T[1] = An array denoting the size of each subtree rooted at node i, where i indexes the array.
-               ie. The number of all children + grandchildren + ... + the node itself
-
-        T[2] = dict where keys are nodes and values are the node's parent
-    :param budget: Number of iterations to make
-    :param batch_size: Number of queries per iteration"""
+def select_case_1(X, labels, T, budget, batch_size):
 
     n_nodes = len(T[1])  # total nodes in T
-    n_samples = len(data)  # total samples in data
+    n_samples = len(X)  # total samples in data
+
+    # set scaffold to fill in
     L = np.zeros(n_nodes)  # majority label
     p1 = np.zeros(n_nodes)  # empirical label frequency
     n = np.zeros(n_nodes)  # number of points sampled from each node
+
+
+
+
     error = []  # np.zeros(n_samples) #error at each round
     root = n_nodes - 1  # corresponds to index of root
     P = np.array([root])

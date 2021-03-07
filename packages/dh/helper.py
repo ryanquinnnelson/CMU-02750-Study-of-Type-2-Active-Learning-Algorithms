@@ -16,7 +16,7 @@ from torch import optim
 # tested
 def generate_T(X):
     """
-    Builds data structure T to contain linkage, subtree sizes, and subtrees.
+    Builds data structure T to contain linkage, subtree sizes, and subtree dictionary.
 
     |  T is a 3-element tree consisting of the following:
     |  - T[0] = linkage matrix from hierarchical clustering.
@@ -37,31 +37,31 @@ def generate_T(X):
 
     Todo - set root node parent as -1 instead of 0 to avoid confusion
 
-    :param X: n x m matrix
-    :return: List representing T
+    :param X: a x b matrix, data to be clustered
+    :return: Tree data structure
     """
 
     # perform hierarchical clustering over training set
     Z = linkage(X, method='ward')
 
-    # build (n-1) x 2 linkage matrix where n is the number of instances in the training set
+    # build (a-1) x 2 linkage matrix where n is the number of instances in the training set
     # row i contains ids of nodes combined at ith iteration
     link = Z[:, :2].astype(int)
 
     # define subtrees for each node in the hierarchy
-    n_samples = len(X)
-    n_nodes = link[-1, -1]  # the number of nodes generated via clustering - See Note 1
-    n_subtree = n_nodes + 2  # add two additional nodes to account for final clustering - See Note 1
-    subtree_sizes = np.zeros(n_subtree)  # scaffold to list number of leaves per subtree
-    subtree_sizes[:n_samples] = 1  # subtrees containing an individual sample before clustering have a single leaf
+    num_samples = len(X)
+    num_nodes = link[-1, -1]  # the number of nodes generated via clustering - See Note 1
+    num_subtrees = num_nodes + 2  # add two additional nodes to account for final clustering - See Note 1
+    subtree_sizes = np.zeros(num_subtrees)  # scaffold to list number of leaves per subtree
+    subtree_sizes[:num_samples] = 1  # subtrees containing an individual sample before clustering have a single leaf
 
     # link subtrees together and use dictionary to define relationships between nodes
     # ?? shouldn't root be set to -1 or something not representing another node in the tree - we have a node 0
-    parents = {2 * (n_samples - 1): 0}  # dictionary relating subtrees together, with root of tree set to 0
+    parents = {2 * (num_samples - 1): 0}  # dictionary relating subtrees together, with root of tree set to 0
     for i in range(len(link)):
         left_child = link[i, 0]
         right_child = link[i, 1]
-        parent = i + n_samples
+        parent = i + num_samples
         parents[left_child] = parent
         parents[right_child] = parent
 
@@ -169,8 +169,8 @@ def compute_error(y_pred, y_true):
     """
     Computes the percent of mislabeled instances out of n samples.
 
-    :param y_pred: n x 1 vector, predicted labels of leaf nodes
-    :param y_true: n x 1 vector, true labels of leaf nodes
+    :param y_pred: a x 1 vector, predicted labels of leaf nodes
+    :param y_true: a x 1 vector, true labels of leaf nodes
     :return: float
     """
 
@@ -180,85 +180,89 @@ def compute_error(y_pred, y_true):
 
 
 # tested
-def assign_labels(L, u, root, T, n_samples):
+def assign_labels(L, u, v, T, num_samples):
     """
-    Assigns label of root node to every leaf node in its subtree.
+    Assigns label of root node to every leaf node in its subtree, using recursion.
 
-    :param L: V x 1 vector, where V is the number of nodes in the tree.
-            Represents current label assignments all nodes in tree.
+    Todo - rewrite to avoid needing to specify u the first time
+
+    :param L: V x 1 vector, where V is the number of nodes in T.
+            Represents current label assignments all nodes in T.
     :param u: current node
-    :param root: root node of subtree
-    :param T: data structure representing hierarchy
-    :param n_samples: number of samples in the hierarchy
-    :return: V x 1 vector, updated label assignments all nodes in tree
+    :param v: root node of subtree Tv
+    :param T: Tree data structure
+    :param num_samples: total number of samples in the data
+    :return: V x 1 vector, representing updated label assignments all nodes in T
     """
 
     link = T[0]
-    if u < n_samples:  # base case - u is a leaf node
-        L[u] = L[root]
+    if u < num_samples:  # base case - u is a leaf node
+        L[u] = L[v]
     else:
         # recursively search subtree rooted at left child of u to find leaves
-        left_child = link[u - n_samples, 0]
-        L = assign_labels(L, left_child, root, T, n_samples)
+        left_child = link[u - num_samples, 0]
+        L = assign_labels(L, left_child, v, T, num_samples)
 
         # recursively search subtree rooted at right child of u to find leaves
-        right_child = link[u - n_samples, 1]
-        L = assign_labels(L, right_child, root, T, n_samples)
+        right_child = link[u - num_samples, 1]
+        L = assign_labels(L, right_child, v, T, num_samples)
 
     return L
 
 
 # tested
-def get_leaves(leaves, v, T, n_samples):
+def get_leaves(leaves, v, T, num_samples):
     """
     Obtains indexes of all leaf nodes for the subtree Tv rooted at v, using recursion.
 
     :param leaves: list of indexes representing previously found leaves
-    :param v: current root node
-    :param T: data structure representing hierarchy
-    :param n_samples: number of samples in the hierarchy
-    :return: list of indexes representing leaves in the subtree Tv rooted at v
+    :param v: root node of subtree Tv
+    :param T: Tree data structure
+    :param num_samples: number of samples in the hierarchy
+    :return: list of indexes representing leaves in the subtree Tv rooted at v, indexed relative to T.
+            For example, leaves=[0,2] means nodes 0 and 2 within tree T are leaf nodes of Tv.
     """
 
     link = T[0]
-    if v < n_samples:
+    if v < num_samples:
         # base case, v is a leaf node
         leaves.append(v)
     else:
         # recursively search for leaves in left child of v
-        left = link[v - n_samples, 0]
-        leaves = get_leaves(leaves, left, T, n_samples)
+        left = link[v - num_samples, 0]
+        leaves = get_leaves(leaves, left, T, num_samples)
 
         # recursively search for leaves in right child of v
-        right = link[v - n_samples, 1]
-        leaves = get_leaves(leaves, right, T, n_samples)
+        right = link[v - num_samples, 1]
+        leaves = get_leaves(leaves, right, T, num_samples)
 
     return leaves
 
 
 # ?? ask about what probabilities represent
 # tested
-def _calculate_confidence_lower_bounds(n, p1):
+def _calculate_confidence_lower_bounds(n, pHat1):
     """
-    Calculates lower bounds of label=0 and label=1 for each node v in V, using Wald's approximation.
+    Calculates lower confidence bounds for empirical labelings label=0 and label=1 for each node v in V, using Wald's approximation.
 
-    :param n: V x 1 vector, where n[v] is the number of points sampled from node v
-            and V is the number of nodes in Tv
-    :param p1: V x 1 vector, where p1[v] is the fraction of label=1 in points sampled from Tv
-    :return: (V x 1 vector,V x 1 vector) Tuple representing (p0_LB, p1_LB)
-            where p0_LB[v] is the lower bounds confidence for labeling all leaves in Tv with 0,
-            and p1_LB[v] is the same for label=1.
+    :param n: V x 1 vector, where V is the number of nodes in T.
+            n[u] is the number of points sampled from node u
+    :param pHat1: V x 1 vector.
+            pHat1[u] is the empirical probability of label=1 in tree node u
+    :return: (V x 1 vector,V x 1 vector) Tuple representing (p0_LB, p1_LB) where
+            p0_LB[u] is the lower bounds confidence for labeling all leaves in Tu with 0, and
+            p1_LB[u] is the same for label=1.
     """
-    #
-    delta1 = (1 / n) + np.sqrt(p1 * (1 - p1) / n)
-
-    # label 1 lower bound
-    p1_tmp = p1 - delta1
-    p1_LB = np.fmax(p1_tmp, 0)  # fmax is component-wise and ignores nan (unlike max)
+    # calculate delta label=1
+    delta1 = (1 / n) + np.sqrt(pHat1 * (1 - pHat1) / n)  # V x 1 vector
 
     # label 0 lower bound
-    p0_tmp = (1 - p1) - delta1
+    p0_tmp = (1 - pHat1) - delta1
     p0_LB = np.fmax(p0_tmp, 0)
+
+    # label 1 lower bound
+    p1_tmp = pHat1 - delta1
+    p1_LB = np.fmax(p1_tmp, 0)  # fmax is component-wise and ignores nan (unlike max)
 
     return p0_LB, p1_LB
 
@@ -269,11 +273,11 @@ def _identify_admissible_sets(p0_LB, p1_LB):
     Identifies admissible set of labels for each node v in V, assuming that
     v contains some known labels.
 
-    :param p0_LB: V x 1 vector, where p0_LB[v] is the lower bounds confidence for labeling all leaves in Tv with 0
-    :param p1_LB: V x 1 vector, where p1_LB[v] is the lower bounds confidence for labeling all leaves in Tv with 1
-    :return: (V x 1 vector, V x 1 vector) Tuple representing (A0,A1)
-            where A0[v] is true if the confidence of label=0 for v is greater than 0.33,
-            and A1[v] is the same for label=1.
+    :param p0_LB: V x 1 vector
+    :param p1_LB: V x 1 vector
+    :return: (V x 1 vector, V x 1 vector) Tuple representing (A0,A1) where
+            A0[v] is true if the confidence of label=0 for v is greater than 0.33, and
+            A1[v] is the same for label=1.
     """
     p0_err_LB = 1 / 3  # with two possible labels, lower bound on the error rate simplifies to 1/3
     p1_err_LB = 1 / 3  # same
@@ -282,27 +286,27 @@ def _identify_admissible_sets(p0_LB, p1_LB):
     return A0, A1
 
 
-# bug in code?
+# bug in code? e1[A0] should be e0[A0]
 # tested
-def _estimate_pruning_error(p1, A0, A1):
+def _estimate_pruning_error(pHat1, A0, A1):
     """
     Calculates empirical estimate of the error of a pruning.
 
-    :param p1: V x 1 vector, where p1[v] is the fraction of label=1 in points sampled from Tv
-    :param A0: V x 1 vector, where A0[v] is true if the confidence of label=0 for v is greater than 0.33
-    :param A1: V x 1 vector, where A1[v] is true if the confidence of label=1 for v is greater than 0.33
-    :return: (V x 1 vector, V x 1 vector) Tuple representing (e0_tilde, e1_tilde)
-            where e0_tilde[v] is the conservative error when all of subtree Tv is labeled with 0,
-            and e1_tilde[v] is the same for label=1.
+    :param pHat1: V x 1 vector
+    :param A0: V x 1 vector
+    :param A1: V x 1 vector
+    :return: (V x 1 vector, V x 1 vector) Tuple representing (e0_tilde, e1_tilde) where
+            e0_tilde[v] is the conservative error when all of subtree Tv is labeled with 0, and
+            e1_tilde[v] is the same for label=1.
     """
 
     # error with label=1
-    e1 = 1 - p1
+    e1 = 1 - pHat1
     e1_tilde = np.ones(len(e1))
     e1_tilde[A1] = e1[A1]  # if label=1 for v is admissible, use e1 otherwise use 1
 
     # error with label=0
-    e0 = p1
+    e0 = pHat1
     e0_tilde = np.ones(len(e0))
     e0_tilde[A0] = e1[A0]  # if label=0 for v is admissible, use e0 otherwise use 1
 
@@ -310,97 +314,107 @@ def _estimate_pruning_error(p1, A0, A1):
 
 
 # tested
-def _update_parent_scores(i, T, A0, A1, score0, score1, i_score):
+def _update_parent_error(i, T, A0, A1, err0, err1, err_v):
     """
 
-    :param i:
-    :param T:
-    :param A0:
-    :param A1:
-    :param score0:
-    :param score1:
-    :param i_score:
-    :return:
+    Todo - determine if I can set score to 0.0 if np.isnan(). It seems like I should be able to do that.
+
+    :param i: ith node in tree T
+    :param T: Tree data structure
+    :param A0: V x 1 vector
+    :param A1: V x 1 vector
+    :param err0: V x 1 vector
+    :param err1: V x 1 vector
+    :param err_v: scalar
+    :return: None
     """
     # T components
     sizes_of_subtrees = T[1]
     parents = T[2]
 
-    # determine parent of i
+    # action depends on parent of i
     parent = parents[i]
     if parent == 0:
         return  # we've reached the root node in Tv
 
-    # calculate score
-    wv = sizes_of_subtrees[i] / sizes_of_subtrees[parent]  # fraction of nodes in parent subtree which are in i
+    # update score for parents
+    w_v = sizes_of_subtrees[i] / sizes_of_subtrees[parent]  # fraction of nodes in parent subtree which are in i
     if A0[i]:
-        if np.isnan(score0[parent]):  # no score has been set for parent of i
-            score0[parent] = wv * i_score
+        if np.isnan(err0[parent]):  # no score has been set for parent of i
+            err0[parent] = w_v * err_v
         else:
-            score0[parent] += wv * i_score
+            err0[parent] += w_v * err_v
 
     if A1[i]:
-        if np.isnan(score1[parent]):  # no score has been set for parent of i
-            score1[parent] = wv * i_score
+        if np.isnan(err1[parent]):  # no score has been set for parent of i
+            err1[parent] = w_v * err_v
         else:
-            score1[parent] += wv * i_score
+            err1[parent] += w_v * err_v
 
 
+# ?? what is this doing
 # tested
-def _find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
+def _find_best_option(n, v, T, A0, A1, e0_tilde, e1_tilde):
     """
+    Chooses the pruning strategy which minimizes the error associated with pruning P.
 
-    :param n: n x 1 vector
-    :param v:
-    :param T:
-    :param A0:
-    :param A1:
-    :param e0_tilde:
-    :param e1_tilde:
-    :return:
+    :param n: V x 1 vector
+    :param v: root node for Tv
+    :param T: Tree data structure
+    :param A0: V x 1 vector
+    :param A1: V x 1 vector
+    :param e0_tilde: V x 1 vector
+    :param e1_tilde: V x 1 vector
+    :return: integer, represents best of four options
     """
-    # setup scaffold for scores
-    scores = np.zeros(len(n))
-    score0 = np.full_like(n, np.nan, dtype=float)
-    score1 = np.full_like(n, np.nan, dtype=float)
+    # setup scaffold to fill in
+    err = np.zeros(len(n))
+    err0 = np.full_like(n, np.nan, dtype=float)
+    err1 = np.full_like(n, np.nan, dtype=float)
 
-    # tally scores for all subtrees including root
+    # sum errors for all subtrees including root
     for i in range(len(n)):
-        print('i', i)
-        # update score for subtree rooted at i
-        _update_parent_scores(i, T, A0, A1, score0, score1, scores[i])
+        # update error for subtree rooted at i
+        _update_parent_error(i, T, A0, A1, err0, err1, err[i])
 
-        # save smallest score for subtree i
-        possible_scores_tmp = [score0[i], score1[i], e0_tilde[i], e1_tilde[i]]
-        scores[i] = np.nanmin(possible_scores_tmp)
+        # retain smallest error for subtree i
+        possible_errs_tmp = [err0[i], err1[i], e0_tilde[i], e1_tilde[i]]
+        err[i] = np.nanmin(possible_errs_tmp)
 
     # ?? seems unnecessary to do this again
-    # find smallest score for subtree Tv rooted at v
-    possible_scores_tmp = [score0[-1], score1[-1], e0_tilde[-1], e1_tilde[-1]]
-    scores[-1] = np.nanmin(possible_scores_tmp)
+    # retain smallest error for root
+    possible_errs_tmp = [err0[-1], err1[-1], e0_tilde[-1], e1_tilde[-1]]
+    err[-1] = np.nanmin(possible_errs_tmp)
 
-    # get the index of the min score of the four possibilities
-    scores_tmp = [score0[v], score1[v], e0_tilde[v], e1_tilde[v]]
-    best = np.nanargmin(scores_tmp)
+    # choose strategy which minimizes error for tree Tv rooted at v
+    possible_errs_tmp = [err0[v], err1[v], e0_tilde[v], e1_tilde[v]]
+    best_option = np.nanargmin(possible_errs_tmp)
 
-    return best
+    return best_option
 
 
 # tested
-def _P_best_after_pruning(v, T, n_samples):
+def _P_best_after_pruning(v, T, num_samples):
+    """
+
+    :param v: root node of tree Tv
+    :param T: Tree data structure
+    :param num_samples: Number of samples in the data
+    :return: array representing best pruning
+    """
     # T components
     link = T[0]
 
-    if v < n_samples:
+    if v < num_samples:  # v is a leaf node
 
         # best pruning occurs at root
         P_best = np.array([v])
     else:
         # get left child of v
-        left = link[v - n_samples, 0]
+        left = link[v - num_samples, 0]
 
         # get right child of v
-        right = link[v - n_samples, 1]
+        right = link[v - num_samples, 1]
 
         # best pruning occurs at children of root
         P_best = np.array([left, right])
@@ -410,78 +424,77 @@ def _P_best_after_pruning(v, T, n_samples):
 
 # ?? understand how this works
 # tested
-def _get_P_best_and_L_best(v, T, n_samples, best):
+def _get_P_best_and_L_best(v, T, num_samples, best_option):
     """
 
-    :param v:
-    :param T:
-    :param n_samples:
-    :param best: option which produces the min score for the tree Tv rooted at v
+    :param v: root node of tree Tv
+    :param T: Tree data structure
+    :param num_samples:
+    :param best_option: option which produces the min score for the tree Tv rooted at v
     :return:
     """
 
-    if best == 0:  # score0 is min
+    if best_option == 0:  # score0 is min
         L_best = 0
-        P_best = _P_best_after_pruning(v, T, n_samples)
-    elif best == 1:  # score1 is min
+        P_best = _P_best_after_pruning(v, T, num_samples)
+    elif best_option == 1:  # score1 is min
         L_best = 1
-        P_best = _P_best_after_pruning(v, T, n_samples)
-    elif best == 2:  # e0_tilde is min
+        P_best = _P_best_after_pruning(v, T, num_samples)
+    elif best_option == 2:  # e0_tilde is min
         L_best = 0
-        P_best = np.array([v])  # retain subtree
-    elif best == 3:  # e1_tilde is min
+        P_best = np.array([v])  # prune at v
+    elif best_option == 3:  # e1_tilde is min
         L_best = 1
-        P_best = np.array([v])  # retain subtree
+        P_best = np.array([v])  # prune at v
     else:
         raise ValueError('best must be an integer between 0 and 3')
 
     return P_best, L_best
 
 
-def best_pruning_and_labeling(n, p1, v, T, n_samples):
+def best_pruning_and_labeling(n, pHat1, v, T, num_samples):
     """
     Finds best pruning and labeling.
 
-    :param n: array with number of points sampled in the subtree rooted at each node
-    :param p1: array with fraction of label = 1 in the subtree rooted at each node
-    :param v: root node of selected subtree T_v
-    :param T: data structure representing hierarchy
-    :param n_samples: number of samples in the hierarchy
-    :return: (array,array) Tuple representing (P_best, L_best)
-            where P_best is the best new pruning and L_best is the best labeling for v
+    :param n: V x 1 vector
+    :param pHat1: V x 1 vector
+    :param v: root node of tree T_v
+    :param T: Tree data structure
+    :param num_samples: number of samples in the data
+    :return: (array,int) Tuple representing (P_best, L_best) where
+            P_best is the best new pruning, and
+            L_best is the best labeling for all nodes in subtree Tv rooted at v
     """
 
-    p0_LB, p1_LB = _calculate_confidence_lower_bounds(n, p1)
+    p0_LB, p1_LB = _calculate_confidence_lower_bounds(n, pHat1)
     A0, A1 = _identify_admissible_sets(p0_LB, p1_LB)
-    e0_tilde, e1_tilde = _estimate_pruning_error(p1, A0, A1)
-    best = _find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
-    P_best, L_best = _get_P_best_and_L_best(v, T, n_samples, best)
+    e0_tilde, e1_tilde = _estimate_pruning_error(pHat1, A0, A1)
+    best_option = _find_best_option(n, v, T, A0, A1, e0_tilde, e1_tilde)
+    P_best, L_best = _get_P_best_and_L_best(v, T, num_samples, best_option)
 
     return P_best, L_best
 
 
 # ?? why can't z be zero? there is a leaf node 0
 # tested
-def update_empirical(n, p1, v, z, label_z, T):
+def update_empirical(n, pHat1, v, z, label_z, T):
     """
     Update empirical counts and probabilities for all nodes u on path between nodes z and v
     if every node u in path is assigned the given label.
     
-    :param n: array with number of points sampled in the subtree rooted at each node
-    :param p1: array with fraction of label = 1 in the subtree rooted at each node 
-    :param v:  root node of selected subtree T_v
-    :param z: selected leaf node in subtree T_vv
+    :param n: V x 1 vector
+    :param pHat1: V x 1 vector
+    :param v:  root node of subtree Tv
+    :param z: leaf node in subtree Tv
     :param label_z: queried label for node z
-    :param T: data structure representing hierarchy
-    :return: (array,array) Tuple representing (n,p1) where
-            n is an array with updated number of points sampled in the subtree rooted at each node;
-            p1 is an array with updated fraction of label = 1 in the subtree rooted at each node
+    :param T: Tree data structure
+    :return: (V x 1 vector,V x 1 vector) Tuple representing updated (n,pHat1)
     """
 
     parents = T[2]
     while z <= v and z != 0:  # for each node in path between z and v
-        l1_prev = n[z] * p1[z]
+        l1_prev = n[z] * pHat1[z]
         n[z] += 1
-        p1[z] = (l1_prev + label_z) / n[z]
+        pHat1[z] = (l1_prev + label_z) / n[z]
         z = np.array([parents[int(z)]])  # get parent
-    return n, p1
+    return n, pHat1

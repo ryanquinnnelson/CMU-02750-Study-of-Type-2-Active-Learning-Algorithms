@@ -1,5 +1,6 @@
 import packages.dh.helper as helper
 import numpy as np
+import pytest
 
 
 def test_generate_T():
@@ -241,7 +242,7 @@ def test__estimate_pruning_error():
     np.testing.assert_allclose(actual[1], expected[1], atol=1e-16)
 
 
-def test__update_parent_scores_root_node():
+def test__update_parent_error_root_node():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -256,12 +257,12 @@ def test__update_parent_scores_root_node():
     score1 = np.full_like(n, np.nan, dtype=float)
     i_score = 0.0
 
-    helper._update_parent_scores(i, T, A0, A1, score0, score1, i_score)
+    helper._update_parent_error(i, T, A0, A1, score0, score1, i_score)
     np.testing.assert_array_equal(score0, np.full_like(n, np.nan, dtype=float))
     np.testing.assert_array_equal(score1, np.full_like(n, np.nan, dtype=float))
 
 
-def test__update_parent_scores_leaf_node_parent_nan():
+def test__update_parent_error_leaf_node_parent_nan():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -280,13 +281,13 @@ def test__update_parent_scores_leaf_node_parent_nan():
     expected_score0 = np.full_like(n, np.nan, dtype=float)
     expected_score0[4] = 0.0
 
-    helper._update_parent_scores(i, T, A0, A1, score0, score1, i_score)
+    helper._update_parent_error(i, T, A0, A1, score0, score1, i_score)
 
     np.testing.assert_array_equal(score0, expected_score0)
     np.testing.assert_array_equal(score1, np.full_like(n, np.nan, dtype=float))
 
 
-def test__find_best_score():
+def test__find_best_option():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -301,7 +302,7 @@ def test__find_best_score():
     e1_tilde = np.array([0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75])
 
     expected = 0
-    actual = helper._find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
+    actual = helper._find_best_option(n, v, T, A0, A1, e0_tilde, e1_tilde)
     assert actual == expected
 
 
@@ -401,3 +402,20 @@ def test__get_P_best_and_L_best_for_best_equals_3():
     P_actual, L_actual = helper._get_P_best_and_L_best(v, T, n_samples, best)
     assert L_actual == L_expected
     np.testing.assert_array_equal(P_actual, P_expected)
+
+
+def test__get_P_best_and_L_best_raises_error():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n_samples = 4
+    best = 4
+    L_expected = 0
+    P_expected = np.array([4, 5])
+
+    with pytest.raises(ValueError):
+        helper._get_P_best_and_L_best(v, T, n_samples, best)
