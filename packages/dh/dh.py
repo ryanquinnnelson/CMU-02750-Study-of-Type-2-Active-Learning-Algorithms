@@ -94,6 +94,7 @@ def _confidence_adjusted_selection(P, T, num_samples, n, pHat1):
     return selected[0]
 
 
+# ?? should be set instead of list
 def select_case_1(X, y_true, T, budget, batch_size):
     """
 
@@ -126,7 +127,7 @@ def select_case_1(X, y_true, T, budget, batch_size):
     for j in range(budget):
 
         # step 1
-        selected_P = set()  # ?? should be set instead of list
+        selected_P = set()  # using set instead of list prevents the same node from being added twice
         for b in range(batch_size):
             # TODO: select a node from P proportional to the size of subtree rooted at each node (DONE)
             v = _proportional_selection(P, T, num_samples)
@@ -166,7 +167,7 @@ def select_case_1(X, y_true, T, budget, batch_size):
     # after all iterations
     # assign final labeling based on best pruning
     for j in range(len(P)):
-        L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Ti the label L(i)
+        L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Tj the label L(j)
     return L, np.array(error)
 
 
@@ -202,7 +203,7 @@ def select_case_2(X, y_true, T, budget, batch_size):
     for j in range(budget):
 
         # step 1
-        selected_P = set()  # ?? should be set instead of list
+        selected_P = set()  # using set instead of list prevents the same node from being added twice
         for b in range(batch_size):
             # TODO: select a node from P biased  towards choosing nodes in areas where the observed labels are less pure
             v = _confidence_adjusted_selection(P, T, num_samples, n, pHat1)
@@ -242,7 +243,7 @@ def select_case_2(X, y_true, T, budget, batch_size):
     # after all iterations
     # assign final labeling based on best pruning
     for j in range(len(P)):
-        L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Ti the label L(i)
+        L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Tj the label L(j)
     return L, np.array(error)
 
 
