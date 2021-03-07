@@ -3,35 +3,38 @@ import packages.dh.helper as helper
 import random
 
 
-# ?? num_samples is correct here?
-# ?? is the pruning defined by its subtrees
-# ?? does every node have a change of being selected
-def _select_random_node(T, num_samples):
+# tested
+def _proportional_selection(P, T, num_samples):
     """
-    From all of the nodes representing subtrees in this pruning, selects one at random, in proportion to the leaves of
-    that subtree vs. the leaves in the tree:
-    p_v = num_leaves_v / num_leaves_T
-
-    :param T: Tree data structure
-    :param num_nodes: number of samples in the data
-    :return: index of the selected subtree
+    Select a node from the pruning, proportional to the size of subtree rooted at each node.
+    :param P:
+    :param T:
+    :param num_samples:
+    :return:
     """
-    num_nodes = len(T[1])
-    nodes = [i for i in range(num_nodes)]
-    leaves_node = np.zeros(num_nodes)
 
-    for node in nodes:
-        # count number of leaves for each node
-        leaves = helper.get_leaves([], node, T, num_samples)
-        leaves_node[node] = len(leaves)
+    # for each subtree in P, get the number of leaf nodes in that subtree
+    num_leaves = np.zeros(len(P))
+    for i in range(len(P)):
+        leaves = helper.get_leaves([], P[i], T, num_samples)
+        num_leaves[i] = (len(leaves))
 
-    # weight for each subtree in this pruning
-    p = leaves_node / num_nodes
-    scale = sum(p)
-    p = leaves_node / num_nodes / scale
-
-    selected = np.random.choice(nodes, 1, p=p)
+    # set weights for each node in P, proportional to number of leaves under that node / number of nodes in T
+    p = num_leaves / num_samples
+    selected = np.random.choice(P, 1, p=p)
     return selected[0]
+
+
+def _confidence_adjusted_selection(T, num_samples):
+    """
+    Select a node from P biasing towards choosing nodes in areas where the observed labels are less pure.
+
+    :param T:
+    :param num_samples:
+    :return:
+    """
+
+    pass
 
 
 def select_case_1(X, y_true, T, budget, batch_size):
@@ -61,14 +64,16 @@ def select_case_1(X, y_true, T, budget, batch_size):
     root = num_nodes - 1  # index of root
     P = np.array([root])
     L[root] = 1
-    for i in range(budget):
 
-        # select a batch of subtrees (root nodes of subtrees)
-        selected_nodes = set()
+    # perform i iterations
+    for j in range(budget):
+
+        # step 1
+        selected_P = set()  # ?? should be set instead of list
         for b in range(batch_size):
-            # TODO: select a node from P proportional to the size of subtree rooted at each node
-            v = _select_random_node(T, num_samples)
-            selected_nodes.add(v)
+            # TODO: select a node from P proportional to the size of subtree rooted at each node (DONE)
+            v = _proportional_selection(P, T, num_samples)
+            selected_P.add(v)
 
             # TODO: pick a random leaf node from subtree Tv and query its label (DONE)
             v_leaves = helper.get_leaves([], v, T, num_samples)
@@ -77,31 +82,34 @@ def select_case_1(X, y_true, T, budget, batch_size):
 
             # TODO: update empirical counts and probabilities for all nodes u on path from z to v (DONE)
             n, pHat1 = helper.update_empirical(n, pHat1, v, z, label_z, T)
+            # print('pHat1',pHat1)
+            # print('n',n)
 
-        for s in selected_nodes:
+        # step 2
+        for p in selected_P:
             # TODO: update admissible A and compute scores; find best pruning and labeling (DONE)
-            P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, s, T, num_samples)
+            P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, p, T, num_samples)
 
             # TODO: update pruning P and labeling L
             # update pruning
-            P = np.union1d(P, P_best)  # ?? how do I remove s from P when s was never in P?
+            P_without_s = P[P != p]  # remove p from P using a mask
+            P = np.union1d(P_without_s, P_best)
 
             # assign label L_best to all u in P_best
             for u in P_best:
                 L[u] = L_best
-                L = helper.assign_labels(L, u, u, T, num_samples)
 
         # TODO: temporarily assign labels to every leaf and compute error (DONE)
         L_temp = L.copy()
         for v in P:
             L_temp = helper.assign_labels(L_temp, v, v, T, num_samples)  # assign each leaf in Tv the label L(v)
-        error_i = helper.compute_error(L_temp, y_true)
+        error_i = helper.compute_error(L_temp[:num_samples], y_true)  # compute error of leaf nodes only
         error.append(error_i)
 
+    # after all iterations
     # assign final labeling based on best pruning
-    for i in range(len(P)):
-        L = helper.assign_labels(L, P[i], P[i], T, num_samples)  # assign each leaf in Ti the label L(i)
-
+    for j in range(len(P)):
+        L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Ti the label L(i)
     return L, np.array(error)
 
 # def select_case_2(data, labels, T, budget, batch_size):
