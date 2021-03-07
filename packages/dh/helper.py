@@ -1,5 +1,5 @@
 """
-Code provided to help implementation of DH.
+Code provided to help implementation of DH, modified to be modular and testable.
 """
 
 import numpy as np
