@@ -7,12 +7,14 @@ import random
 # ?? is the pruning defined by its subtrees
 def _select_random_subtree(P, T, num_samples):
     """
-    each subtree has a chance of being chosen in proportion to the leaves of that subtree vs. the leaves in the tree
-    p_v = l_v / num_samples
-    :param P:
-    :param T:
-    :param num_samples:
-    :return:
+    From all of the nodes representing subtrees in this pruning, selects one at random, in proportion to the leaves of
+    that subtree vs. the leaves in the tree:
+    p_v = num_leaves_v / num_leaves_T
+
+    :param P: pruning
+    :param T: Tree data structure
+    :param num_samples: number of samples in the data
+    :return: index of the selected subtree
     """
     # get nodes representing the root of the subtrees in this pruning
     link = T[0]
@@ -60,12 +62,12 @@ def select_case_1(X, y_true, T, budget, batch_size):
 
     for i in range(budget):
 
-        # part 1
-        selected_P = []
+        # select a batch of subtrees (root nodes of subtrees)
+        selected_nodes = []
         for b in range(batch_size):
             # TODO: select a node from P proportional to the size of subtree rooted at each node (DONE)
             v = _select_random_subtree(P, T, num_samples)
-            selected_P.append(v)
+            selected_nodes.append(v)
 
             # TODO: pick a random leaf node from subtree Tv and query its label (DONE)
             v_leaves = helper.get_leaves([], v, T, num_samples)
@@ -75,27 +77,30 @@ def select_case_1(X, y_true, T, budget, batch_size):
             # TODO: update empirical counts and probabilities for all nodes u on path from z to v (DONE)
             n, pHat1 = helper.update_empirical(n, pHat1, v, z, label_z, T)
 
-        # part 2
-        for p in selected_P:
-            # TODO: update admissible A and compute scores; find best pruning and labeling
-            # ?? what should root be? p?
-            P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, p, T, num_samples)
+        # use selected subtrees to update pruning and labels
+        for s in selected_nodes:
+            # TODO: update admissible A and compute scores; find best pruning and labeling (DONE)
+            P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, s, T, num_samples)
 
             # TODO: update pruning P and labeling L
-            # ?? store on its own? what does it mean to update labeling and pruning P?
-            P = P_best
-            L = helper.assign_labels(L, P[p], P[p], T, num_samples)
+            P_without_s = np.delete(P, s)  # remove s from pruning P
+            P = np.union1d(P_without_s, P_best)  # union P_best
 
-        # ?? start from root? what should v be?
-        # TODO: temporarily assign labels to every leaf and compute error
+            # assign label L_best to all u in P_best
+            for u in P_best:
+                L[u] = L_best
+                L = helper.assign_labels(L, u, u, T, num_samples)
+
+        # TODO: temporarily assign labels to every leaf and compute error (DONE)
         L_temp = L.copy()
-        L_i = helper.assign_labels(L_temp, root, root, T, num_samples)
-        error_i = helper.compute_error(L_i, y_true)
+        for v in P:
+            L_temp = helper.assign_labels(L_temp, v, v, T, num_samples)  # assign each leaf in Tv the label L(v)
+        error_i = helper.compute_error(L_temp, y_true)
         error.append(error_i)
 
     # assign final labeling based on best pruning
     for i in range(len(P)):
-        L = helper.assign_labels(L, P[i], P[i], T, num_samples)
+        L = helper.assign_labels(L, P[i], P[i], T, num_samples)  # assign each leaf in Ti the label L(i)
 
     return L, np.array(error)
 
