@@ -96,6 +96,33 @@ def test__proportional_selection_two():
     assert 0.49 <= round(num_5 / total, 2) <= 0.51
 
 
+def test__proportional_selection_three():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+
+    P = np.array([3, 5, 0])
+    num_samples = 4
+    num_5 = 0
+    num_0 = 0
+    num_3 = 0
+    total = 10000
+    for i in range(total):
+        actual = dh._proportional_selection(P, T, num_samples)
+        if actual == 5:
+            num_5 += 1
+        elif actual == 0:
+            num_0 += 1
+        else:
+            num_3 += 1
+    assert 0.49 <= round(num_5 / total, 2) <= 0.51
+    assert 0.24 <= round(num_0 / total, 2) <= 0.26
+    assert 0.24 <= round(num_3 / total, 2) <= 0.26
+
+
 def test__get_confidence_adjusted_weights_one_node():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
