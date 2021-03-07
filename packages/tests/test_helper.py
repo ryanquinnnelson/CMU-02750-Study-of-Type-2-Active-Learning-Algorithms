@@ -210,7 +210,7 @@ def test__calculate_confidence_lower_bounds():
     n = np.array([100, 100, 100, 100])
     p1 = np.array([0.9, 0.8, 0.4, 0.6])
 
-    wald_term = np.array([0.01, 0.01,0.01,0.01]) + np.sqrt(p1 * (1 - p1) / n)
+    wald_term = np.array([0.01, 0.01, 0.01, 0.01]) + np.sqrt(p1 * (1 - p1) / n)
     p0_LB = (1 - p1) - wald_term
     p1_LB = p1 - wald_term
 
@@ -222,7 +222,7 @@ def test__calculate_confidence_lower_bounds():
 
 def test__identify_admissible_sets():
     p0 = np.array([0.1, 0.8, 0.2, 0.6])
-    p1 = 1-p0
+    p1 = 1 - p0
 
     expected = np.array([False, True, False, True]), np.array([True, False, True, True])
     actual = helper._identify_admissible_sets(p0, p1)
@@ -235,13 +235,13 @@ def test__estimate_pruning_error():
     A0 = np.array([True, False, True, True])
     A1 = np.array([False, True, False, True])
 
-    expected = np.array([0.1, 1, 0.2, 0.6]), np.array([1, 0.8, 1, 0.6 ])
+    expected = np.array([0.1, 1, 0.2, 0.6]), np.array([1, 0.8, 1, 0.6])
     actual = helper._estimate_pruning_error(p1, A0, A1)
     np.testing.assert_allclose(actual[0], expected[0], atol=1e-16)  # rounding error
     np.testing.assert_allclose(actual[1], expected[1], atol=1e-16)
 
 
-def test__calculate_score_root_node():
+def test__update_scores_root_node():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -249,20 +249,19 @@ def test__calculate_score_root_node():
 
     T = helper.generate_T(X_train)
     i = 6
-    n = np.array([1,1,1,1,1,1])
+    n = np.array([1, 1, 1, 1, 1, 1])
     A0 = np.array([True, False, True, True])
     A1 = np.array([False, True, False, True])
-    score0=np.full_like(n, np.nan,dtype=float)
-    score1=np.full_like(n, np.nan,dtype=float)
-    scores =np.zeros(len(n))
+    score0 = np.full_like(n, np.nan, dtype=float)
+    score1 = np.full_like(n, np.nan, dtype=float)
+    i_score = 0.0
 
-    helper._calculate_score(i, T, A0, A1, score0, score1, scores)
-    np.testing.assert_array_equal(score0, np.full_like(n, np.nan,dtype=float))
-    np.testing.assert_array_equal(score1, np.full_like(n, np.nan,dtype=float))
-    np.testing.assert_array_equal(scores, np.zeros(len(n)))
+    helper._update_scores(i, T, A0, A1, score0, score1, i_score)
+    np.testing.assert_array_equal(score0, np.full_like(n, np.nan, dtype=float))
+    np.testing.assert_array_equal(score1, np.full_like(n, np.nan, dtype=float))
 
 
-def test__calculate_score_leaf_node_parent_nan():
+def test__update_scores_leaf_node_parent_nan():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -271,21 +270,17 @@ def test__calculate_score_leaf_node_parent_nan():
     T = helper.generate_T(X_train)
     i = 0
     n = np.array([1, 1, 1, 1, 1, 1])
-    A0 = np.array([True, False, True, True,True, True])
-    A1 = np.array([False, True, False, True, False,False])
-    score0=np.full_like(n, np.nan,dtype=float)
-    score1=np.full_like(n, np.nan,dtype=float)
-    scores =np.zeros(len(n))
+    A0 = np.array([True, False, True, True, True, True])
+    A1 = np.array([False, True, False, True, False, False])
+    score0 = np.full_like(n, np.nan, dtype=float)
+    score1 = np.full_like(n, np.nan, dtype=float)
+    i_score = 0.0
 
     # generate expected
-    expected_score0 = np.full_like(n, np.nan,dtype=float)
+    expected_score0 = np.full_like(n, np.nan, dtype=float)
     expected_score0[4] = 0.0
 
-    helper._calculate_score(i, T, A0, A1, score0, score1, scores)
+    helper._update_scores(i, T, A0, A1, score0, score1, i_score)
 
     np.testing.assert_array_equal(score0, expected_score0)
-    np.testing.assert_array_equal(score1, np.full_like(n, np.nan,dtype=float))
-    np.testing.assert_array_equal(scores, np.zeros(len(n)))
-
-
-
+    np.testing.assert_array_equal(score1, np.full_like(n, np.nan, dtype=float))

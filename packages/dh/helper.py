@@ -309,8 +309,8 @@ def _estimate_pruning_error(p1, A0, A1):
     return e0_tilde, e1_tilde
 
 
-def _calculate_score(i, T, A0, A1, score0, score1, scores):
-
+# tested
+def _update_scores(i, T, A0, A1, score0, score1, i_score):
     # T components
     sizes_of_subtrees = T[1]
     parents = T[2]
@@ -323,15 +323,15 @@ def _calculate_score(i, T, A0, A1, score0, score1, scores):
     wv = sizes_of_subtrees[i] / sizes_of_subtrees[parent]  # fraction of nodes in parent subtree which are in i
     if A0[i]:
         if np.isnan(score0[parent]):  # no score has been set for parent of i
-            score0[parent] = wv * scores[i]
+            score0[parent] = wv * i_score
         else:
-            score0[parent] += wv * scores[i]
+            score0[parent] += wv * i_score
 
     if A1[i]:
         if np.isnan(score1[parent]):  # no score has been set for parent of i
-            score1[parent] = wv * scores[i]
+            score1[parent] = wv * i_score
         else:
-            score1[parent] += wv * scores[i]
+            score1[parent] += wv * i_score
 
 
 def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
@@ -354,9 +354,8 @@ def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
 
     # calculate scores for all subtrees
     for i in range(len(n)):
-
         # calculate score for subtree rooted at i
-        _calculate_score(i, T, A0, A1, score0, score1, scores)
+        _update_scores(i, T, A0, A1, score0, score1, scores[i])
 
         # find smallest score for subtree i
         possible_scores_tmp = [score0[i], score1[i], e0_tilde[i], e1_tilde[i]]
