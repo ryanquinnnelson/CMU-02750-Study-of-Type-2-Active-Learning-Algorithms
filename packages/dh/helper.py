@@ -288,7 +288,6 @@ def _identify_admissible_sets(p0_LB, p1_LB):
     return A0, A1
 
 
-# bug in code? e1[A0] should be e0[A0]
 # tested
 def _estimate_pruning_error(pHat1, A0, A1):
     """
