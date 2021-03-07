@@ -207,7 +207,7 @@ def test_update_empirical_multiple_steps():
     np.testing.assert_array_equal(actual[1], expected[1])
 
 
-def test__calculate_confidence_lower_bounds():
+def test_calculate_confidence_lower_bounds_test_one():
     n = np.array([100, 100, 100, 100])
     p1 = np.array([0.9, 0.8, 0.4, 0.6])
 
@@ -219,6 +219,21 @@ def test__calculate_confidence_lower_bounds():
     actual = helper.calculate_confidence_lower_bounds(n, p1)
     np.testing.assert_array_equal(actual[0], expected[0])
     np.testing.assert_array_equal(actual[1], expected[1])
+
+
+def test_calculate_confidence_lower_bounds_test_two():
+    n = np.array([100, 100, 100, 100, 200, 200, 400])  # number of nodes
+    p1 = np.array([0.9, 0.4, 0.8, 0.5, 0.9, 0.5, 0.7])
+
+    p0_LB = np.array([0.06, 0.54101021, 0.15, 0.44, 0.0737868,
+                      0.45964466, 0.27458712])
+    p1_LB = np.array([0.86, 0.34101021, 0.75, 0.44, 0.8737868,
+                      0.45964466, 0.67458712])
+
+    expected = p0_LB, p1_LB
+    actual = helper.calculate_confidence_lower_bounds(n, p1)
+    np.testing.assert_allclose(actual[0], expected[0], atol=1e-08)
+    np.testing.assert_allclose(actual[1], expected[1], atol=1e-08)
 
 
 def test__identify_admissible_sets():

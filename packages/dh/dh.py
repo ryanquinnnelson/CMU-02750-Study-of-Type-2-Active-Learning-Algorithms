@@ -3,6 +3,7 @@ import packages.dh.helper as helper
 import random
 
 
+# tested
 def _get_proportional_weights(P, T, num_samples):
     """
     Calculates wv = # leaves Tv / # leaves T.
@@ -11,17 +12,17 @@ def _get_proportional_weights(P, T, num_samples):
     :param num_samples:
     :return:
     """
-    # # for each subtree in P, get the number of leaf nodes in that subtree
-    # num_leaves = np.zeros(len(P))
-    # for i in range(len(P)):
-    #     leaves = helper.get_leaves([], P[i], T, num_samples)
-    #     num_leaves[i] = (len(leaves))
 
-    # get number of leaves in each subtree in P
-    sizes_of_subtree = T[1]
-    sizes_of_subtrees_in_P = sizes_of_subtree[P]
+    if len(P) == 1:
+        wv = np.array([1.0])  # only node that can be selected
+    else:
 
-    return sizes_of_subtrees_in_P / num_samples
+        # get number of leaves in each subtree in P
+        sizes_of_subtree = T[1]
+        sizes_of_subtrees_in_P = sizes_of_subtree[P]
+        wv = sizes_of_subtrees_in_P / num_samples
+
+    return wv
 
 
 # tested
@@ -34,34 +35,63 @@ def _proportional_selection(P, T, num_samples):
     :return:
     """
     # set weights wv for each node v in P
-    wv = _get_proportional_weights(P,T,num_samples)
+    wv = _get_proportional_weights(P, T, num_samples)
 
     # Each node v in P has a probability of being selected proportional to its weight.
     selected = np.random.choice(P, 1, p=wv)
     return selected[0]
 
 
+# tested
+def _get_confidence_adjusted_weights(P, T, num_samples, n, pHat1):
+    """
+    Calculates p = wv(1 - p1_LB).
+
+    :param P:
+    :param T:
+    :param num_samples:
+    :param n:
+    :param pHat1:
+    :return:
+    """
+    if len(P) == 1:
+
+        p_scaled = np.array([1.0])  # only node that can be selected
+    else:
+
+        # calculate confidence lower bounds
+        p0_LB, p1_LB = helper.calculate_confidence_lower_bounds(n, pHat1)
+
+        # limit to nodes in P
+        p1_LB_P = p1_LB[P]
+
+        # set weights wv for each node v in P
+        wv = _get_proportional_weights(P, T, num_samples)
+
+        # defines probabilities as combination of proportion of dataset and label purity
+        p = wv * (1 - p1_LB_P)
+
+        # scale probabilities so they sum to 1
+        p_scaled = p / sum(p)
+
+    return p_scaled
+
+
+# tested
 def _confidence_adjusted_selection(P, T, num_samples, n, pHat1):
     """
     Select a node from P biasing towards choosing nodes in areas where the observed labels are less pure.
+
 
     :param T:
     :param num_samples:
     :param pHat1:
     :return:
     """
-    # calculate confidence lower bounds
-    p0_LB, p1_LB = helper.calculate_confidence_lower_bounds(n, pHat1)
+    p = _get_confidence_adjusted_weights(P, T, num_samples, n, pHat1)
+    selected = np.random.choice(P, 1, p=p)
 
-    # set weights wv for each node v in P:  wv = # leaves Tv / # leaves T
-    num_leaves = np.zeros(len(P))
-    for i in range(len(P)):
-        leaves = helper.get_leaves([], P[i], T, num_samples)
-        num_leaves[i] = (len(leaves))
-    wv = num_leaves / num_samples
-
-
-    return 0
+    return selected[0]
 
 
 def select_case_1(X, y_true, T, budget, batch_size):
