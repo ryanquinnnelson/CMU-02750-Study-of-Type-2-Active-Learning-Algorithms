@@ -3,6 +3,33 @@ import packages.dh.helper as helper
 import random
 
 
+# ?? num_samples is correct here?
+# ?? is the pruning defined by its subtrees
+def _select_random_subtree(P, T, num_samples):
+    """
+    each subtree has a chance of being chosen in proportion to the leaves of that subtree vs. the leaves in the tree
+    p_v = l_v / num_samples
+    :param P:
+    :param T:
+    :param num_samples:
+    :return:
+    """
+    # get nodes representing the root of the subtrees in this pruning
+    link = T[0]
+    subtrees = []
+    for v in P:
+        left = link[v - num_samples, 0]  # root of left subtree
+        right = link[v - num_samples, 1]  # root of right subtree
+        subtrees.append(left)
+        subtrees.append(right)
+
+    # choose a subtree randomly using weighted proportions
+    sizes_of_subtrees = T[1]
+    sizes_of_subtrees_in_P = sizes_of_subtrees[subtrees]  # limit only to subtrees in this pruning
+    p = sizes_of_subtrees_in_P / num_samples  # weight for each subtree in this pruning
+    return np.random.choice(subtrees, 1, p=p)
+
+
 def select_case_1(X, y_true, T, budget, batch_size):
     """
 
@@ -33,12 +60,12 @@ def select_case_1(X, y_true, T, budget, batch_size):
 
     for i in range(budget):
 
-        # ??
-        selected_P = []  # pruning after each query in this iteration
+        # part 1
+        selected_P = []
         for b in range(batch_size):
-            pass
-            # TODO: select a node from P proportional to the size of subtree rooted at each node
-            v = 1
+            # TODO: select a node from P proportional to the size of subtree rooted at each node (DONE)
+            v = _select_random_subtree(P, T, num_samples)
+            selected_P.append(v)
 
             # TODO: pick a random leaf node from subtree Tv and query its label (DONE)
             v_leaves = helper.get_leaves([], v, T, num_samples)
@@ -48,11 +75,11 @@ def select_case_1(X, y_true, T, budget, batch_size):
             # TODO: update empirical counts and probabilities for all nodes u on path from z to v (DONE)
             n, pHat1 = helper.update_empirical(n, pHat1, v, z, label_z, T)
 
-        # ??
+        # part 2
         for p in selected_P:
             # TODO: update admissible A and compute scores; find best pruning and labeling
-            # ?? what should v be?
-            P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, P[p], T, num_samples)
+            # ?? what should root be? p?
+            P_best, L_best = helper.best_pruning_and_labeling(n, pHat1, p, T, num_samples)
 
             # TODO: update pruning P and labeling L
             # ?? store on its own? what does it mean to update labeling and pruning P?
@@ -62,7 +89,7 @@ def select_case_1(X, y_true, T, budget, batch_size):
         # ?? start from root? what should v be?
         # TODO: temporarily assign labels to every leaf and compute error
         L_temp = L.copy()
-        L_i = helper.assign_labels(L_temp, P[i], P[i], T, num_samples)
+        L_i = helper.assign_labels(L_temp, root, root, T, num_samples)
         error_i = helper.compute_error(L_i, y_true)
         error.append(error_i)
 
