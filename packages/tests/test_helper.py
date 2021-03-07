@@ -303,3 +303,101 @@ def test__find_best_score():
     expected = 0
     actual = helper._find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
     assert actual == expected
+
+
+def test__P_best_after_pruning_v_less_than_n_samples():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 1
+    n_samples = 4
+
+    expected = np.array([v])
+    actual = helper._P_best_after_pruning(v, T, n_samples)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__P_best_after_pruning_v_greater_than_n_samples():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n_samples = 4
+
+    expected = np.array([4, 5])
+    actual = helper._P_best_after_pruning(v, T, n_samples)
+    np.testing.assert_array_equal(actual, expected)
+
+
+def test__get_P_best_and_L_best_for_best_equals_0():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n_samples = 4
+    best = 0
+    L_expected = 0
+    P_expected = np.array([4, 5])
+    P_actual, L_actual = helper._get_P_best_and_L_best(v, T, n_samples, best)
+    assert L_actual == L_expected
+    np.testing.assert_array_equal(P_actual, P_expected)
+
+
+def test__get_P_best_and_L_best_for_best_equals_1():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n_samples = 4
+    best = 1
+    L_expected = 1
+    P_expected = np.array([4, 5])
+    P_actual, L_actual = helper._get_P_best_and_L_best(v, T, n_samples, best)
+    assert L_actual == L_expected
+    np.testing.assert_array_equal(P_actual, P_expected)
+
+
+def test__get_P_best_and_L_best_for_best_equals_2():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n_samples = 4
+    best = 2
+    L_expected = 0
+    P_expected = np.array([v])
+    P_actual, L_actual = helper._get_P_best_and_L_best(v, T, n_samples, best)
+    assert L_actual == L_expected
+    np.testing.assert_array_equal(P_actual, P_expected)
+
+
+def test__get_P_best_and_L_best_for_best_equals_3():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n_samples = 4
+    best = 3
+    L_expected = 1
+    P_expected = np.array([v])
+    P_actual, L_actual = helper._get_P_best_and_L_best(v, T, n_samples, best)
+    assert L_actual == L_expected
+    np.testing.assert_array_equal(P_actual, P_expected)

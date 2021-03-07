@@ -386,39 +386,61 @@ def _find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
     return best
 
 
-def _calc_P_best_and_L_best(v, T, n_samples, best):
+# tested
+def _P_best_after_pruning(v, T, n_samples):
     # T components
     link = T[0]
 
-    if best == 0:
-        L_best = 0
-        if v < n_samples:
-            P_best = np.array([v])
-        else:
-            left = link[v - n_samples, 0]
-            right = link[v - n_samples, 1]
-            P_best = np.array([left, right])
-    elif best == 1:
-        L_best = 1
-        if v < n_samples:
-            P_best = np.array([v])
-        else:
-            left = link[v - n_samples, 0]
-            right = link[v - n_samples, 1]
-            P_best = np.array([left, right])
-    elif best == 2:
-        L_best = 0
+    if v < n_samples:
+
+        # best pruning occurs at root
         P_best = np.array([v])
     else:
+        # get left child of v
+        left = link[v - n_samples, 0]
+
+        # get right child of v
+        right = link[v - n_samples, 1]
+
+        # best pruning occurs at children of root
+        P_best = np.array([left, right])
+
+    return P_best
+
+
+# ?? understand how this works
+# tested
+def _get_P_best_and_L_best(v, T, n_samples, best):
+    """
+
+    :param v:
+    :param T:
+    :param n_samples:
+    :param best: option which produces the min score for the tree Tv rooted at v
+    :return:
+    """
+
+    if best == 0:  # score0 is min
+        L_best = 0
+        P_best = _P_best_after_pruning(v, T, n_samples)
+    elif best == 1:  # score1 is min
         L_best = 1
-        P_best = np.array([v])
+        P_best = _P_best_after_pruning(v, T, n_samples)
+    elif best == 2:  # e0_tilde is min
+        L_best = 0
+        P_best = np.array([v])  # retain subtree
+    elif best == 3:  # e1_tilde is min
+        L_best = 1
+        P_best = np.array([v])  # retain subtree
+    else:
+        raise ValueError('best must be an integer between 0 and 3')
 
     return P_best, L_best
 
 
 def best_pruning_and_labeling(n, p1, v, T, n_samples):
     """
-    Update admissible A and compute scores, then finds best pruning and labeling.
+    Finds best pruning and labeling.
 
     :param n: array with number of points sampled in the subtree rooted at each node
     :param p1: array with fraction of label = 1 in the subtree rooted at each node
@@ -433,7 +455,7 @@ def best_pruning_and_labeling(n, p1, v, T, n_samples):
     A0, A1 = _identify_admissible_sets(p0_LB, p1_LB)
     e0_tilde, e1_tilde = _estimate_pruning_error(p1, A0, A1)
     best = _find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
-    P_best, L_best = _calc_P_best_and_L_best(v, T, n_samples, best)
+    P_best, L_best = _get_P_best_and_L_best(v, T, n_samples, best)
 
     return P_best, L_best
 
