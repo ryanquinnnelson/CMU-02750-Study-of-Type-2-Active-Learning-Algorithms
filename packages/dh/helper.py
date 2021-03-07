@@ -174,7 +174,8 @@ def compute_error(y_pred, y_true):
     :return: float
     """
 
-    wrong = (y_pred[:len(y_true)] != y_true).sum()
+    # wrong = (y_pred[:len(y_true)] != y_true).sum()  # no longer necessary
+    wrong = (y_pred != y_true).sum()
     error = wrong / len(y_true)
     return error
 
@@ -243,7 +244,8 @@ def get_leaves(leaves, v, T, num_samples):
 # tested
 def _calculate_confidence_lower_bounds(n, pHat1):
     """
-    Calculates lower confidence bounds for empirical labelings label=0 and label=1 for each node v in V, using Wald's approximation.
+    Calculates lower confidence bounds for empirical labelings label=0 and label=1 for each node v in V,
+    using Wald's approximation.
 
     :param n: V x 1 vector, where V is the number of nodes in T.
             n[u] is the number of points sampled from node u

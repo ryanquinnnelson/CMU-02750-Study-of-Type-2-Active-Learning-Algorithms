@@ -6,10 +6,10 @@ import random
 # tested
 def _proportional_selection(P, T, num_samples):
     """
-    Select a node from the pruning, proportional to the size of subtree rooted at each node.
-    :param P:
-    :param T:
-    :param num_samples:
+    Select a node v from the pruning, proportional to the size of subtree rooted at v.
+    :param P: array, represents current pruning
+    :param T: Tree data structure
+    :param num_samples: Number of samples in the data
     :return:
     """
 
@@ -19,7 +19,7 @@ def _proportional_selection(P, T, num_samples):
         leaves = helper.get_leaves([], P[i], T, num_samples)
         num_leaves[i] = (len(leaves))
 
-    # set weights for each node in P, proportional to number of leaves under that node / number of nodes in T
+    # set weights wv for each node v in P:  wv = # leaves Tv / # leaves T
     p = num_leaves / num_samples
     selected = np.random.choice(P, 1, p=p)
     return selected[0]
@@ -34,6 +34,8 @@ def _confidence_adjusted_selection(P, T, num_samples, pHat1):
     :param pHat1:
     :return:
     """
+
+
 
     return 0
 
