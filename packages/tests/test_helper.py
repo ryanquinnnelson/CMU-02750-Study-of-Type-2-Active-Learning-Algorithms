@@ -251,7 +251,7 @@ def test__estimate_pruning_error():
     A0 = np.array([True, False, True, True])
     A1 = np.array([False, True, False, True])
 
-    expected = np.array([0.1, 1, 0.2, 0.6]), np.array([1, 0.8, 1, 0.6])
+    expected = np.array([0.9, 1, 0.8, 0.4]), np.array([1, 0.8, 1, 0.6])
     actual = helper._estimate_pruning_error(p1, A0, A1)
     np.testing.assert_allclose(actual[0], expected[0], atol=1e-16)  # rounding error
     np.testing.assert_allclose(actual[1], expected[1], atol=1e-16)

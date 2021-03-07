@@ -310,7 +310,7 @@ def _estimate_pruning_error(pHat1, A0, A1):
     # error with label=0
     e0 = pHat1
     e0_tilde = np.ones(len(e0))
-    e0_tilde[A0] = e1[A0]  # if label=0 for v is admissible, use e0 otherwise use 1
+    e0_tilde[A0] = e0[A0]  # if label=0 for v is admissible, use e0 otherwise use 1
 
     return e0_tilde, e1_tilde
 
