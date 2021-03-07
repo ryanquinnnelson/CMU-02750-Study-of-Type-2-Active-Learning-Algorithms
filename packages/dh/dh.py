@@ -3,6 +3,27 @@ import packages.dh.helper as helper
 import random
 
 
+def _get_proportional_weights(P, T, num_samples):
+    """
+    Calculates wv = # leaves Tv / # leaves T.
+    :param P:
+    :param T:
+    :param num_samples:
+    :return:
+    """
+    # # for each subtree in P, get the number of leaf nodes in that subtree
+    # num_leaves = np.zeros(len(P))
+    # for i in range(len(P)):
+    #     leaves = helper.get_leaves([], P[i], T, num_samples)
+    #     num_leaves[i] = (len(leaves))
+
+    # get number of leaves in each subtree in P
+    sizes_of_subtree = T[1]
+    sizes_of_subtrees_in_P = sizes_of_subtree[P]
+
+    return sizes_of_subtrees_in_P / num_samples
+
+
 # tested
 def _proportional_selection(P, T, num_samples):
     """
@@ -12,20 +33,15 @@ def _proportional_selection(P, T, num_samples):
     :param num_samples: Number of samples in the data
     :return:
     """
+    # set weights wv for each node v in P
+    wv = _get_proportional_weights(P,T,num_samples)
 
-    # for each subtree in P, get the number of leaf nodes in that subtree
-    num_leaves = np.zeros(len(P))
-    for i in range(len(P)):
-        leaves = helper.get_leaves([], P[i], T, num_samples)
-        num_leaves[i] = (len(leaves))
-
-    # set weights wv for each node v in P:  wv = # leaves Tv / # leaves T
-    p = num_leaves / num_samples
-    selected = np.random.choice(P, 1, p=p)
+    # Each node v in P has a probability of being selected proportional to its weight.
+    selected = np.random.choice(P, 1, p=wv)
     return selected[0]
 
 
-def _confidence_adjusted_selection(P, T, num_samples, pHat1):
+def _confidence_adjusted_selection(P, T, num_samples, n, pHat1):
     """
     Select a node from P biasing towards choosing nodes in areas where the observed labels are less pure.
 
@@ -34,7 +50,15 @@ def _confidence_adjusted_selection(P, T, num_samples, pHat1):
     :param pHat1:
     :return:
     """
+    # calculate confidence lower bounds
+    p0_LB, p1_LB = helper.calculate_confidence_lower_bounds(n, pHat1)
 
+    # set weights wv for each node v in P:  wv = # leaves Tv / # leaves T
+    num_leaves = np.zeros(len(P))
+    for i in range(len(P)):
+        leaves = helper.get_leaves([], P[i], T, num_samples)
+        num_leaves[i] = (len(leaves))
+    wv = num_leaves / num_samples
 
 
     return 0
@@ -53,7 +77,7 @@ def select_case_1(X, y_true, T, budget, batch_size):
 
     # define variables
     num_nodes = len(T[1])  # total nodes in T
-    num_samples = len(X)  # total samples in data
+    num_samples = len(X)  # total samples in data, equal to the number of leaves in T
 
     # set scaffolds to fill in
     n = np.zeros(num_nodes)  # number of points sampled from each node
@@ -129,7 +153,7 @@ def select_case_2(X, y_true, T, budget, batch_size):
 
     # define variables
     num_nodes = len(T[1])  # total nodes in T
-    num_samples = len(X)  # total samples in data
+    num_samples = len(X)  # total samples in data, equal to the number of leaves in T
 
     # set scaffolds to fill in
     n = np.zeros(num_nodes)  # number of points sampled from each node
@@ -151,7 +175,7 @@ def select_case_2(X, y_true, T, budget, batch_size):
         selected_P = set()  # ?? should be set instead of list
         for b in range(batch_size):
             # TODO: select a node from P biased  towards choosing nodes in areas where the observed labels are less pure
-            v = _confidence_adjusted_selection(P, T, num_samples, pHat1)
+            v = _confidence_adjusted_selection(P, T, num_samples, n, pHat1)
             selected_P.add(v)
 
             # TODO: pick a random leaf node from subtree Tv and query its label (DONE)

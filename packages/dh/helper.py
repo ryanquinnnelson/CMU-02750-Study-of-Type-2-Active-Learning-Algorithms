@@ -242,7 +242,7 @@ def get_leaves(leaves, v, T, num_samples):
 
 # ?? ask about what probabilities represent
 # tested
-def _calculate_confidence_lower_bounds(n, pHat1):
+def calculate_confidence_lower_bounds(n, pHat1):
     """
     Calculates lower confidence bounds for empirical labelings label=0 and label=1 for each node v in V,
     using Wald's approximation.
@@ -468,7 +468,7 @@ def best_pruning_and_labeling(n, pHat1, v, T, num_samples):
             L_best is the best labeling for all nodes in subtree Tv rooted at v
     """
 
-    p0_LB, p1_LB = _calculate_confidence_lower_bounds(n, pHat1)
+    p0_LB, p1_LB = calculate_confidence_lower_bounds(n, pHat1)
     A0, A1 = _identify_admissible_sets(p0_LB, p1_LB)
     e0_tilde, e1_tilde = _estimate_pruning_error(pHat1, A0, A1)
     best_option = _find_best_option(n, v, T, A0, A1, e0_tilde, e1_tilde)

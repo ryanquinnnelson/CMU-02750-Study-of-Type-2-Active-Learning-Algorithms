@@ -216,7 +216,7 @@ def test__calculate_confidence_lower_bounds():
     p1_LB = p1 - wald_term
 
     expected = p0_LB, p1_LB
-    actual = helper._calculate_confidence_lower_bounds(n, p1)
+    actual = helper.calculate_confidence_lower_bounds(n, p1)
     np.testing.assert_array_equal(actual[0], expected[0])
     np.testing.assert_array_equal(actual[1], expected[1])
 
