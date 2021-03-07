@@ -241,7 +241,7 @@ def test__estimate_pruning_error():
     np.testing.assert_allclose(actual[1], expected[1], atol=1e-16)
 
 
-def test__update_scores_root_node():
+def test__update_parent_scores_root_node():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -249,19 +249,19 @@ def test__update_scores_root_node():
 
     T = helper.generate_T(X_train)
     i = 6
-    n = np.array([1, 1, 1, 1, 1, 1])
-    A0 = np.array([True, False, True, True])
-    A1 = np.array([False, True, False, True])
+    n = np.array([1, 1, 1, 1, 1, 1, 1])
+    A0 = np.array([True, False, True, True, True, True, False])
+    A1 = np.array([False, True, False, True, False, False, False])
     score0 = np.full_like(n, np.nan, dtype=float)
     score1 = np.full_like(n, np.nan, dtype=float)
     i_score = 0.0
 
-    helper._update_scores(i, T, A0, A1, score0, score1, i_score)
+    helper._update_parent_scores(i, T, A0, A1, score0, score1, i_score)
     np.testing.assert_array_equal(score0, np.full_like(n, np.nan, dtype=float))
     np.testing.assert_array_equal(score1, np.full_like(n, np.nan, dtype=float))
 
 
-def test__update_scores_leaf_node_parent_nan():
+def test__update_parent_scores_leaf_node_parent_nan():
     X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
                         [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
                         [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
@@ -269,9 +269,9 @@ def test__update_scores_leaf_node_parent_nan():
 
     T = helper.generate_T(X_train)
     i = 0
-    n = np.array([1, 1, 1, 1, 1, 1])
-    A0 = np.array([True, False, True, True, True, True])
-    A1 = np.array([False, True, False, True, False, False])
+    n = np.array([1, 1, 1, 1, 1, 1, 1])
+    A0 = np.array([True, False, True, True, True, True, False])
+    A1 = np.array([False, True, False, True, False, False, False])
     score0 = np.full_like(n, np.nan, dtype=float)
     score1 = np.full_like(n, np.nan, dtype=float)
     i_score = 0.0
@@ -280,7 +280,26 @@ def test__update_scores_leaf_node_parent_nan():
     expected_score0 = np.full_like(n, np.nan, dtype=float)
     expected_score0[4] = 0.0
 
-    helper._update_scores(i, T, A0, A1, score0, score1, i_score)
+    helper._update_parent_scores(i, T, A0, A1, score0, score1, i_score)
 
     np.testing.assert_array_equal(score0, expected_score0)
     np.testing.assert_array_equal(score1, np.full_like(n, np.nan, dtype=float))
+
+
+def test__find_best_score():
+    X_train = np.array([[0.41, 0.59, 0.65, 0.14, 0.5, 0., 0.49, 0.33],
+                        [0.55, 0.53, 0.54, 0.4, 0.5, 0., 0.48, 0.22],
+                        [0.38, 0.38, 0.54, 0.24, 0.5, 0., 0.54, 0.22],
+                        [0.49, 0.51, 0.52, 0.13, 0.5, 0., 0.51, 0.33]])
+
+    T = helper.generate_T(X_train)
+    v = 6
+    n = np.array([1, 1, 1, 1, 2, 2, 4])
+    A0 = np.array([True, False, True, True, True, True])
+    A1 = np.array([False, True, False, True, False, False])
+    e0_tilde = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
+    e1_tilde = np.array([0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75])
+
+    expected = 0
+    actual = helper._find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
+    assert actual == expected

@@ -310,11 +310,23 @@ def _estimate_pruning_error(p1, A0, A1):
 
 
 # tested
-def _update_scores(i, T, A0, A1, score0, score1, i_score):
+def _update_parent_scores(i, T, A0, A1, score0, score1, i_score):
+    """
+
+    :param i:
+    :param T:
+    :param A0:
+    :param A1:
+    :param score0:
+    :param score1:
+    :param i_score:
+    :return:
+    """
     # T components
     sizes_of_subtrees = T[1]
     parents = T[2]
 
+    # determine parent of i
     parent = parents[i]
     if parent == 0:
         return  # we've reached the root node in Tv
@@ -334,7 +346,8 @@ def _update_scores(i, T, A0, A1, score0, score1, i_score):
             score1[parent] += wv * i_score
 
 
-def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
+# tested
+def _find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
     """
 
     :param n: n x 1 vector
@@ -346,26 +359,27 @@ def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
     :param e1_tilde:
     :return:
     """
-
     # setup scaffold for scores
     scores = np.zeros(len(n))
     score0 = np.full_like(n, np.nan, dtype=float)
     score1 = np.full_like(n, np.nan, dtype=float)
 
-    # calculate scores for all subtrees
+    # tally scores for all subtrees including root
     for i in range(len(n)):
-        # calculate score for subtree rooted at i
-        _update_scores(i, T, A0, A1, score0, score1, scores[i])
+        print('i', i)
+        # update score for subtree rooted at i
+        _update_parent_scores(i, T, A0, A1, score0, score1, scores[i])
 
-        # find smallest score for subtree i
+        # save smallest score for subtree i
         possible_scores_tmp = [score0[i], score1[i], e0_tilde[i], e1_tilde[i]]
         scores[i] = np.nanmin(possible_scores_tmp)
 
+    # ?? seems unnecessary to do this again
     # find smallest score for subtree Tv rooted at v
     possible_scores_tmp = [score0[-1], score1[-1], e0_tilde[-1], e1_tilde[-1]]
     scores[-1] = np.nanmin(possible_scores_tmp)
 
-    # get the index of the min score
+    # get the index of the min score of the four possibilities
     scores_tmp = [score0[v], score1[v], e0_tilde[v], e1_tilde[v]]
     best = np.nanargmin(scores_tmp)
 
@@ -418,7 +432,7 @@ def best_pruning_and_labeling(n, p1, v, T, n_samples):
     p0_LB, p1_LB = _calculate_confidence_lower_bounds(n, p1)
     A0, A1 = _identify_admissible_sets(p0_LB, p1_LB)
     e0_tilde, e1_tilde = _estimate_pruning_error(p1, A0, A1)
-    best = _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
+    best = _find_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde)
     P_best, L_best = _calc_P_best_and_L_best(v, T, n_samples, best)
 
     return P_best, L_best
