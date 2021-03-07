@@ -252,14 +252,14 @@ def test__calculate_score_root_node():
     n = np.array([1,1,1,1,1,1])
     A0 = np.array([True, False, True, True])
     A1 = np.array([False, True, False, True])
-    score0=np.full_like(n, np.nan)
-    score1=np.full_like(n, np.nan)
+    score0=np.full_like(n, np.nan,dtype=float)
+    score1=np.full_like(n, np.nan,dtype=float)
     scores =np.zeros(len(n))
 
     helper._calculate_score(i, T, A0, A1, score0, score1, scores)
-    np.testing.assert_array_equal(score0, np.full_like(6, np.nan))
-    np.testing.assert_array_equal(score1, np.full_like(6, np.nan))
-    np.testing.assert_array_equal(scores, np.zeros(6))
+    np.testing.assert_array_equal(score0, np.full_like(n, np.nan,dtype=float))
+    np.testing.assert_array_equal(score1, np.full_like(n, np.nan,dtype=float))
+    np.testing.assert_array_equal(scores, np.zeros(len(n)))
 
 
 def test__calculate_score_leaf_node_parent_nan():
@@ -273,20 +273,19 @@ def test__calculate_score_leaf_node_parent_nan():
     n = np.array([1, 1, 1, 1, 1, 1])
     A0 = np.array([True, False, True, True,True, True])
     A1 = np.array([False, True, False, True, False,False])
-    score0=np.full_like(n, np.nan)
-    score1=np.full_like(n, np.nan)
+    score0=np.full_like(n, np.nan,dtype=float)
+    score1=np.full_like(n, np.nan,dtype=float)
     scores =np.zeros(len(n))
 
     # generate expected
-    expected_score0 = np.full_like(n, np.nan)
+    expected_score0 = np.full_like(n, np.nan,dtype=float)
     expected_score0[4] = 0.0
 
     helper._calculate_score(i, T, A0, A1, score0, score1, scores)
-    print(score0)
-    1/0
-    # np.testing.assert_array_equal(score0, expected_score0, atol=1e-16)
-    # np.testing.assert_array_equal(score1, np.full_like(n, np.nan), atol=1e-16)
-    # np.testing.assert_array_equal(scores, np.zeros(len(n)), atol=1e-16)
+
+    np.testing.assert_array_equal(score0, expected_score0)
+    np.testing.assert_array_equal(score1, np.full_like(n, np.nan,dtype=float))
+    np.testing.assert_array_equal(scores, np.zeros(len(n)))
 
 
 

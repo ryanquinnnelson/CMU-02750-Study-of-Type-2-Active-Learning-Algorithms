@@ -349,8 +349,8 @@ def _calc_best_score(n, v, T, A0, A1, e0_tilde, e1_tilde):
 
     # setup scaffold for scores
     scores = np.zeros(len(n))
-    score0 = np.full_like(n, np.nan)
-    score1 = np.full_like(n, np.nan)
+    score0 = np.full_like(n, np.nan, dtype=float)
+    score1 = np.full_like(n, np.nan, dtype=float)
 
     # calculate scores for all subtrees
     for i in range(len(n)):
