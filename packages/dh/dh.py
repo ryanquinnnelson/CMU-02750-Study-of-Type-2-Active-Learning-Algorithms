@@ -98,6 +98,8 @@ def _confidence_adjusted_selection(P, T, num_samples, n, pHat1):
 def select_case_1(X, y_true, T, budget, batch_size):
     """
 
+    Todo - modularize to make more testable
+
     :param X: a x b matrix, data samples
     :param y_true: a x 1 vector, true labels for samples
     :param T: Tree data structure
@@ -173,6 +175,8 @@ def select_case_1(X, y_true, T, budget, batch_size):
 
 def select_case_2(X, y_true, T, budget, batch_size):
     """
+
+    Todo - refactor to eliminate duplication of code from select_case_1
 
     :param X: a x b matrix, data samples
     :param y_true: a x 1 vector, true labels for samples

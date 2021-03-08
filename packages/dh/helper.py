@@ -35,7 +35,7 @@ def generate_T(X):
     |  Stop - sample 0 is not given a node because we know the final clustering is 0 and 5.
     Hierarchical clustering does not record combining 0 and 5 to get 6, so the overall tree is missing 2 nodes.
 
-    Todo - set root node parent as -1 instead of 0 to avoid confusion
+    Todo - set root node parent as -1 instead of 0 to avoid confusion, and fix all other methods to reflect this change
 
     :param X: a x b matrix, data to be clustered
     :return: Tree data structure
@@ -240,7 +240,6 @@ def get_leaves(leaves, v, T, num_samples):
     return leaves
 
 
-# ?? ask about what probabilities represent
 # tested
 def calculate_confidence_lower_bounds(n, pHat1):
     """
@@ -448,7 +447,7 @@ def _get_P_best_and_L_best(v, T, num_samples, best_option):
         L_best = 1
         P_best = np.array([v])  # prune at v
     else:
-        raise ValueError('best must be an integer between 0 and 3')
+        raise ValueError('best_option must be an integer between 0 and 3', best_option)
 
     return P_best, L_best
 
@@ -476,7 +475,7 @@ def best_pruning_and_labeling(n, pHat1, v, T, num_samples):
     return P_best, L_best
 
 
-# ?? why can't z be zero? there is a leaf node 0
+# ?? why can't z be zero here?
 # tested
 def update_empirical(n, pHat1, v, z, label_z, T):
     """
