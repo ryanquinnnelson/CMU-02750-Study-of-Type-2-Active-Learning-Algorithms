@@ -1,5 +1,5 @@
 # CMU-02750-HW2
-Spring 2021 - Automation of Scientific Research - course project
+Spring 2021 - Automation of Scientific Research - course project - Study of Type II Active Learning Algorithms
 
 ### Summary
 This project implements ZLG and DH algorithms as Python packages with unit tests (pytest) and documentation. The project 
