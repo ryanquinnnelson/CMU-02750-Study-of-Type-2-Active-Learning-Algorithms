@@ -34,7 +34,7 @@ instances.
 *In layman's terms, ZLG starts with the idea that if we assume data has natural clusters, we can also assume that 
 two data points which are close together are likely to have the same label. Under this theory, labeled instances 
 surrounding an unlabeled instance "influence" what the label ought to be, with the amount of influence depending on 
-how similar the labeled instance is to the unlabeled one.* 
+how similar a labeled instance is to the unlabeled one.* 
 
 *ZLG models this influence as a system of energy, with each data point radiating energy outward onto all of its 
 neighbors. Data points with similar labels "vibrate" at similar wavelengths, creating resonance; data points 
@@ -70,7 +70,7 @@ number of queries made overall, DH also provides a strategy to query the unlabel
 pruning. 
 
 At a high level, the process works as follows. The algorithm takes the current pruning and selects a subtree from it 
-based on the size of the subtree vs. the overall tree as well as the heterogeneity of observed labels in each subtree. (The larger the subtree, the more likely it is 
+based on the size of the subtree vs. the overall tree, as well as the heterogeneity of observed labels in each subtree. (The larger the subtree, the more likely it is 
 chosen. The more heterogenous the labels within the subtree, the more likely it is chosen.) An unlabeled point is chosen
 at random within the selected subtree for labeling. (This selection strategy corrects for sample bias.) 
 
@@ -100,8 +100,9 @@ DH breaks the data
 into, the more the queries will be spread out. (The less queries a group gets, the less certainty there is about the 
 purity of the group.) The algorithm considers all factors and decides whether or not to break up the group.*
 
-*Given the resulting group(s), DH is incentivized to select the one which is the least pure and query the label of some
-points within that group. This process is repeated until the sample budget is used up. Once this happens, DH takes each of the current groups and assigns
+*Given the resulting group(s), DH is incentivized to select a group which is the less pure and query the label of some
+points within that group. DH is also incentivized to select a group which is larger, given that smaller groups tend to 
+increase purity overall. This process is repeated until the sample budget is used up. Once this happens, DH takes each of the current groups and assigns
 a single label to all unlabeled instances in that group (i.e. the majority label). All data in the 
 pool is now labeled, and the dataset can be used for supervised learning.*
 
