@@ -17,16 +17,16 @@ Analysis was performed using Jupyter Notebook and Python.
 ### Explanation of ZLG
 #### Formal Version
 ZLG is a Type II active learning algorithm used for binary classification on a pool-based data access model. It 
-labels instances based on expected risk, and it maintains a prediction for all unlabeled instances in the pool. 
-It comes with no guarantees.
+labels instances based on expected risk, and it comes with no guarantees of performance or label complexity.
 
 The algorithm starts by building a weighted graph over a pool of labeled and unlabeled instances, with edges connecting 
-instances which are deemed "similar enough." ZLG uses the graph and known labels to construct a  probability 
+instances which are deemed "similar enough." ZLG uses the graph and known labels to construct a probability 
 distribution over the unlabeled instances. It finds the optimal labeling solution for the distribution in closed-form,
 producing label predictions for all unlabeled instances.
 
 ZLG uses these predictions to calculate an expected risk of the labeling. The algorithm searches through the unlabeled 
-instances to find the one which reduces the expected risk the most, and selects it for labeling. This process is 
+instances to find the one which reduces the expected risk the most, and selects it for labeling. ZLG updates the label
+predictions based on the label. This process is 
 repeated until a defined stopping point, at which point we use the current label predictions to label all unlabeled 
 instances.
 
