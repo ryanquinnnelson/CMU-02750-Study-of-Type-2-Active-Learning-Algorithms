@@ -24,9 +24,11 @@ instances which are deemed "similar enough." ZLG uses the graph and known labels
 distribution over the unlabeled instances. It finds the optimal labeling solution for the distribution in closed-form,
 producing label predictions for all unlabeled instances.
 
-ZLG uses these predictions to calculate an expected risk of the labeling. The algorithm searches through the unlabeled 
-instances to find the one which reduces the expected risk the most, and selects it for labeling. ZLG updates the label
-predictions based on the label. This process is 
+ZLG uses these predictions to calculate the expected risk of inferring labels for all unlabeled instances.
+The algorithm searches through the unlabeled 
+instances to find the one which, when labeled, reduces the expected risk the most. ZLG queries the label for this 
+instance and updates label
+predictions for all unlabeled instances based on the label. This search process is 
 repeated until a defined stopping point, at which point we use the current label predictions to label all unlabeled 
 instances.
 
@@ -39,10 +41,14 @@ how similar a labeled instance is to the unlabeled one.*
 *ZLG models this influence as a system of energy, with each data point radiating energy outward onto all of its 
 neighbors. Data points with similar labels "vibrate" at similar wavelengths, creating resonance; data points 
 with different labels vibrate at different wavelengths, creating dissonance. By considering the energies of all 
-of the points, we can determine the energy of the overall system.*
+of the points, we can determine the energy of the overall system. ZLG leverages the well-studied principles of a 
+system of energy (Boltzmann distribution) to efficiently estimate a 
+labeling which produces a system with the least energy (i.e. least dissonance), given the current set of labeled 
+instances. The estimates represents what the labels should be when considered as a system of energy.*
 
-*ZLG leverages the well-studied principles of a system of energy (Boltzmann distribution) to efficiently find a 
-labeling which produces a system with the least energy (i.e. least dissonance), given a set of labeled instances.*
+*Given that this is an estimate, there is some risk that the predicted labels are wrong. Until its query budget is 
+used up, ZLG repeatedly searches for the best instances to query to minimize this risk, updating its predictions 
+along the way.*
 
 
 ### Explanation of DH
