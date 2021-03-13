@@ -7,7 +7,6 @@ import numpy as np
 from scipy.spatial import distance_matrix
 
 
-# ?? confirm squared Euclidean distance
 # tested
 def _calculate_weights_1(X):
     """
@@ -56,7 +55,6 @@ def _calculate_weights_1(X):
     return weights
 
 
-# ?? confirm squared Euclidean distance
 # tested
 def _calculate_weights_2(X):
     """
@@ -84,7 +82,7 @@ def _calculate_weights_2(X):
 
     # remaining calculations
     a = -1.0 / np.var(X)
-    b = np.multiply(X_dist_squared, a)
+    b = a * X_dist_squared
     weights = np.exp(b)
 
     return weights
@@ -101,7 +99,7 @@ def _construct_weight_matrix(weights, t):
     :param t: scalar, user-defined threshold for retaining weights
     :return: n x n matrix, where non-zero values represent edges
     """
-    W = np.where(weights >= t, weights, 0.0)
+    W = np.where(weights >= t, weights, 0.0)  # nonzero weight indicates edge
     return W
 
 
@@ -145,17 +143,21 @@ def laplacian_matrix(X, t):
     :param t: scalar, user-defined threshold for retaining weights
     :return: n x n matrix
     """
-    # calculate weight matrix W
+    # weight matrix
     weights = _calculate_weights_2(X)
     W = _construct_weight_matrix(weights, t)
+
+    # diagonal matrix
     D = _construct_diagonal_matrix(W)
+
+    # Laplacian
     L = _subtract_matrices(D, W)
 
     return L
 
 
 # tested
-def _helper_square_submatrix(L, idx):
+def _build_square_submatrix(L, idx):
     """
     Constructs square submatrix from the given Laplacian matrix. The process for submatrix ll and uu is exactly the
     same, only the list is different.
@@ -227,7 +229,7 @@ def _construct_ll(L, labeled):
                     i.e. [0,2] if instance 1 and 3 are labeled.
     :return: b x b matrix, where b is the number of labeled instances
     """
-    return _helper_square_submatrix(L, labeled)
+    return _build_square_submatrix(L, labeled)
 
 
 # tested
@@ -276,11 +278,11 @@ def _construct_uu(L, unlabeled):
                         i.e. [0,2] if instance 1 and 3 are unlabeled.
     :return: a x a matrix, where a is the number of unlabeled instances
     """
-    return _helper_square_submatrix(L, unlabeled)
+    return _build_square_submatrix(L, unlabeled)
 
 
 # tested
-def _helper_rectangular_submatrix(L, idx_i, idx_j):
+def _build_rectangular_submatrix(L, idx_i, idx_j):
     """
     Constructs rectangular submatrix from the given Laplacian matrix.
     Todo - Determine if sorting is really necessary.
@@ -363,7 +365,7 @@ def _construct_lu(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: b x a matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    return _helper_rectangular_submatrix(L, labeled, unlabeled)
+    return _build_rectangular_submatrix(L, labeled, unlabeled)
 
 
 # tested
@@ -417,7 +419,7 @@ def _construct_ul(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: a x b matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    return _helper_rectangular_submatrix(L, unlabeled, labeled)
+    return _build_rectangular_submatrix(L, unlabeled, labeled)
 
 
 # tested
@@ -588,7 +590,7 @@ def expected_estimated_risk(f_u, uu_inv, k):
     f_u_plus_xk1 = _update_minimum_energy_solution(f_u, uu_inv, k, y_k=1)
     Rhat_f_plus_xk1 = _expected_risk(f_u_plus_xk1)
 
-    # estimated expected risk
+    # estimated expected risk of getting any label for point k
     f_k = f_u[k]
     Rhat_f_plus_xk = (1.0 - f_k) * Rhat_f_plus_xk0 + f_k * Rhat_f_plus_xk1
 
