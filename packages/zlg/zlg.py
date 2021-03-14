@@ -672,6 +672,14 @@ class ZLG:
 
     # tested
     def __init__(self, Xk, yk, Xu, yu):
+        """
+        Initializes instance and sets tracking for labeled and unlabeled samples.
+
+        :param Xk: labeled samples
+        :param yk: labels for labeled samples
+        :param Xu: unlabeled samples
+        :param yu: labels for unlabeled samples
+        """
         self.Xk = Xk
         self.yk = yk
         self.Xu = Xu
@@ -686,6 +694,11 @@ class ZLG:
 
     # tested
     def _update_sets(self, query_idx):
+        """
+        Moves selected sample from arbitrary position in unlabeled data set to end of labeled data set.
+        :param query_idx:
+        :return: None
+        """
         # add instance to end of labeled set
         self.yk = np.append(self.yk, self.yu[query_idx])
         self.Xk = np.append(self.Xk, [self.Xu[query_idx, :]], axis=0)
@@ -704,6 +717,10 @@ class ZLG:
 
     # tested
     def score(self):
+        """
+        Calculates the accuracy of predicted labels.
+        :return: float, calculated accuracy
+        """
 
         y_pred = np.round(self.fu)
         y_true = self.yu
