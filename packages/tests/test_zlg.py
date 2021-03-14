@@ -369,3 +369,131 @@ def test_zlg_query():
     expected = 1
     actual = zlg.zlg_query(f_u, uu_inv, num_labeled, num_samples)
     assert actual == expected
+
+
+def test__score_model():
+    f_u = np.array([0.51, 0.7, 0.1, 0.2])
+    y_true = np.array([1, 0, 0, 0])
+
+    y_pred = np.round(f_u)
+    assert zlg._score_model(y_pred, y_true) == 3 / 4
+
+
+def test__init__():
+    Xk = np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]])
+    Xu = np.array([[11, 12, 13],
+                   [14, 15, 16],
+                   [17, 18, 19]])
+    yk = np.array([21, 22, 23])
+    yu = np.array([-1, -2, -3])
+
+    expected_labeled = [0, 1, 2]
+    expected_unlabeled = [3, 4, 5]
+    model = zlg.ZLG(Xk, yk, Xu, yu)
+    np.testing.assert_array_equal(model.Xk, Xk)
+    np.testing.assert_array_equal(model.Xu, Xu)
+    np.testing.assert_array_equal(model.yk, yk)
+    np.testing.assert_array_equal(model.yu, yu)
+    assert model.labeled == expected_labeled
+    assert model.unlabeled == expected_unlabeled
+
+
+def test__update_sets():
+    Xk = np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]])
+    Xu = np.array([[11, 12, 13],
+                   [14, 15, 16],
+                   [17, 18, 19]])
+    yk = np.array([21, 22, 23])
+    yu = np.array([-1, -2, -3])
+
+    model = zlg.ZLG(Xk, yk, Xu, yu)
+
+    expected_Xk = np.array([[1, 2, 3],
+                            [4, 5, 6],
+                            [7, 8, 9],
+                            [14, 15, 16]])
+    expected_Xu = np.array([[11, 12, 13],
+                            [17, 18, 19]])
+    expected_yk = np.array([21, 22, 23, -2])
+    expected_yu = np.array([-1, -3])
+
+    query_idx = 1
+    model._update_sets(query_idx)
+    np.testing.assert_array_equal(model.Xk, expected_Xk)
+    np.testing.assert_array_equal(model.Xu, expected_Xu)
+    np.testing.assert_array_equal(model.yk, expected_yk)
+    np.testing.assert_array_equal(model.yu, expected_yu)
+
+
+def test__update_indexes():
+    Xk = np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]])
+    Xu = np.array([[11, 12, 13],
+                   [14, 15, 16],
+                   [17, 18, 19]])
+    yk = np.array([21, 22, 23])
+    yu = np.array([-1, -2, -3])
+
+    model = zlg.ZLG(Xk, yk, Xu, yu)
+
+    expected_labeled = [0, 1, 2, 3]
+    expected_unlabeled = [4, 5]
+    model._update_indexes()
+    assert model.labeled == expected_labeled
+    assert model.unlabeled == expected_unlabeled
+
+
+def test__improve_predictions():
+    Xk = np.array([[1, 2, 3],
+                   [4, 5, 6],
+                   [7, 8, 9]])
+    Xu = np.array([[1.4, 1.5, 1.6],
+                   [6.1, 5.2, 8.3],
+                   [7.4, 8.5, 9.6]])
+    yk = np.array([1, 1, 0])
+    yu = np.array([1, 1, 0])
+    t = 0
+    budget = 2
+
+    # --- helpful details ---
+    # first query (fu = [0.99995895 0.39336109 0.0726076 ], query_idx = 1)
+    # X = np.concatenate((Xk, Xu), axis=0)
+    # delta = zlg.laplacian_matrix(X, t)
+    # labeled = [0,1,2]
+    # unlabeled = [3,4,5]
+    # n_l = 3
+    # n_samples = 6
+    # fu, delta_uu_inv = zlg.minimum_energy_solution(delta, labeled, unlabeled, yk)
+    # query_idx = zlg.zlg_query(fu, delta_uu_inv,n_l,n_samples)
+    # score = 1.0
+
+    # second query (fu = [0.99999979 0.16902111], query_idx = 1)
+    # Xk = np.array([[1, 2, 3],
+    #                [4, 5, 6],
+    #                [7, 8, 9],
+    #               [6.1, 5.2, 8.3]])
+    # Xu = np.array([[1.4, 1.5, 1.6],
+    #                [7.4, 8.5, 9.6]])
+    # yk = np.array([1,1,0,1])
+    # yu = np.array([1,0])
+    # labeled = [0,1,2,3]
+    # unlabeled = [4,5]
+    # n_l = 4
+    # X = np.concatenate((Xk, Xu), axis=0)
+    # delta = zlg.laplacian_matrix(X, t)
+    # fu, delta_uu_inv = zlg.minimum_energy_solution(delta, labeled, unlabeled, yk)
+    # query_idx = zlg.zlg_query(fu, delta_uu_inv,n_l,n_samples)
+    # score = 1.0
+
+    first_query_original_idx = 4
+    second_query_original_idx = 5
+    expected_original_indexes = [first_query_original_idx, second_query_original_idx]
+    expected_scores = [1.0, 1.0]
+    actual_indexes, actual_scores = zlg.ZLG(Xk, yk, Xu, yu).improve_predictions(t, budget)
+    assert actual_indexes == expected_original_indexes
+    assert actual_scores == expected_scores

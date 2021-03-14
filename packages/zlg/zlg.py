@@ -4,7 +4,50 @@ See http://mlg.eng.cam.ac.uk/zoubin/papers/zglactive.pdf.
 """
 
 import numpy as np
+import copy
 from scipy.spatial import distance_matrix
+
+"""
+Note 1 - On the tracking of original labels
+The labeled and unlabeled index lists maintained for each ZLG instance are defined relative to X, the entire
+data set. This implementation always maintains the labeled samples as the first part of X and unlabeled samples
+as the second part of X. 
+
+The query index selected for each round by ZLG is defined relative to the current unlabeled set alone. As 
+samples are labeled, they are moved from their arbitrary position in the unlabeled data set to the end of the 
+labeled data set. This changes the index position of all unlabeled samples after the chosen sample, relative to the 
+original X.
+        
+        labeled             unlabeled
+        [0,1,2,3,4]         [5,6,7,8]  indexes
+        [a,b,c,d,e]         [f,g,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 7th element in original X
+        
+        labeled             unlabeled
+        [0,1,2,3,4,5]       [6,7,8]  indexes
+        [a,b,c,d,e,g]       [f,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 8th element in original X
+        
+We need a way to determine the original index positions for each queried sample so we can track which unlabeled
+samples are selected from X by the ZLG algorithm. If we maintain a separate list of original indexes, we can preserve 
+the relationship to X. 
+        
+        labeled             unlabeled                original
+        [0,1,2,3,4]         [5,6,7,8]  indexes       [5,6,7,8]
+        [a,b,c,d,e]         [f,g,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 7th element in original X
+        original_idx = 6
+        
+        labeled             unlabeled                original
+        [0,1,2,3,4,5]       [6,7,8]  indexes         [5,7,8]
+        [a,b,c,d,e,g]       [f,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 8th element in original X
+        original_idx = 7
+"""
 
 
 # tested
@@ -623,3 +666,95 @@ def zlg_query(f_u, uu_inv, num_labeled, num_samples):
             min_Rhat = Rhat
 
     return query_idx
+
+
+# tested
+def _score_model(y_pred, y_true):
+    if y_pred.shape[0] != y_true.shape[0]:
+        raise ValueError('Arrays must be the same size to compare.')
+
+    wrong = (y_pred != y_true).sum()
+    error = wrong / len(y_true)
+    return 1.0 - error
+
+
+class ZLG:
+
+    # tested
+    def __init__(self, Xk, yk, Xu, yu):
+        self.Xk = Xk
+        self.yk = yk
+        self.Xu = Xu
+        self.yu = yu
+
+        # track indices of labeled and unlabeled
+        self.labeled = [i for i in range(len(yk))]
+        self.unlabeled = [i for i in range(len(yk), len(Xk) + len(Xu))]
+
+    # tested
+    def _update_sets(self, query_idx):
+        # add instance to end of labeled set
+        self.yk = np.append(self.yk, self.yu[query_idx])
+        self.Xk = np.append(self.Xk, [self.Xu[query_idx, :]], axis=0)
+
+        # remove instance from unlabeled set
+        self.yu = np.delete(self.yu, query_idx)
+        self.Xu = np.delete(self.Xu, query_idx, axis=0)
+
+    # tested
+    def _update_indexes(self):
+        """
+        Moves the first element in list of unlabeled indexes to end of the list of labeled indexes.
+        :return: None
+        """
+        self.labeled.append(self.unlabeled.pop(0))
+
+    # tested
+    def improve_predictions(self, t, budget):
+        """
+        Uses the sampling budget and user-defined similarity threshold to improve the predictions of unlabeled
+        samples in the data pool.
+
+        :param t: float, similarity threshold
+        :param budget: number of queries allowed to the oracle
+        :return: (list, list) Tuple representing (queried_indexes, scores) where
+                queried_indexes is the list of indexes queried each round (relative to the original X), and
+                scores is the accuracy of the predicted labels for remaining unlabeled data after labeling the
+                sample selected for that round.
+        """
+        # track original indices of unlabeled samples
+        original_indexes = copy.deepcopy(self.unlabeled)  # see "Note 1 - On the tracking of original labels"
+
+        # initialize components
+        X = np.concatenate((self.Xk, self.Xu), axis=0)
+        delta = laplacian_matrix(X, t)
+        fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
+
+        # use query budget to improve predictions
+        queried_indexes = []
+        scores = []
+        for query in range(budget):
+            # select unlabeled sample to query
+            query_idx = zlg_query(fu, delta_uu_inv, len(self.yk), len(X))
+
+            # record which sample was queried
+            original_idx = original_indexes[query_idx]  # get original index relative to X
+            queried_indexes.append(original_idx)
+            original_indexes.pop(query_idx)  # remove element from same relative position
+
+            # update fields
+            self._update_indexes()
+            self._update_sets(query_idx)  # move newly labeled sample to labeled set
+
+            # update Laplacian
+            X = np.concatenate((self.Xk, self.Xu), axis=0)
+            delta = laplacian_matrix(X, t)
+
+            # update label predictions given newly labeled sample
+            fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
+
+            # score predictions
+            y_pred = np.round(fu)
+            scores.append(_score_model(y_pred, self.yu))
+
+        return queried_indexes, scores
