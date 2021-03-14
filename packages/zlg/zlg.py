@@ -4,10 +4,52 @@ See http://mlg.eng.cam.ac.uk/zoubin/papers/zglactive.pdf.
 """
 
 import numpy as np
+import copy
 from scipy.spatial import distance_matrix
 
+"""
+Note 1 - On the tracking of original labels
+The labeled and unlabeled index lists maintained for each ZLG instance are defined relative to X, the entire
+data set. This implementation always maintains the labeled samples as the first part of X and unlabeled samples
+as the second part of X. 
 
-# ?? confirm squared Euclidean distance
+The query index selected for each round by ZLG is defined relative to the current unlabeled set alone. As 
+samples are labeled, they are moved from their arbitrary position in the unlabeled data set to the end of the 
+labeled data set. This changes the index position of all unlabeled samples after the chosen sample, relative to the 
+original X.
+        
+        labeled             unlabeled
+        [0,1,2,3,4]         [5,6,7,8]  indexes
+        [a,b,c,d,e]         [f,g,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 7th element in original X
+        
+        labeled             unlabeled
+        [0,1,2,3,4,5]       [6,7,8]  indexes
+        [a,b,c,d,e,g]       [f,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 8th element in original X
+        
+We need a way to determine the original index positions for each queried sample so we can track which unlabeled
+samples are selected from the original X by the ZLG algorithm. If we maintain a separate list of original indexes, we 
+can preserve the relationship to the original X. 
+        
+        labeled             unlabeled                original
+        [0,1,2,3,4]         [5,6,7,8]  indexes       [5,6,7,8]
+        [a,b,c,d,e]         [f,g,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 7th element in original X
+        original_idx = 6
+        
+        labeled             unlabeled                original
+        [0,1,2,3,4,5]       [6,7,8]  indexes         [5,7,8]
+        [a,b,c,d,e,g]       [f,h,i]  samples
+        
+        query_idx = 1  // second unlabeled element is the 8th element in original X
+        original_idx = 7
+"""
+
+
 # tested
 def _calculate_weights_1(X):
     """
@@ -56,7 +98,6 @@ def _calculate_weights_1(X):
     return weights
 
 
-# ?? confirm squared Euclidean distance
 # tested
 def _calculate_weights_2(X):
     """
@@ -84,7 +125,7 @@ def _calculate_weights_2(X):
 
     # remaining calculations
     a = -1.0 / np.var(X)
-    b = np.multiply(X_dist_squared, a)
+    b = a * X_dist_squared
     weights = np.exp(b)
 
     return weights
@@ -101,7 +142,7 @@ def _construct_weight_matrix(weights, t):
     :param t: scalar, user-defined threshold for retaining weights
     :return: n x n matrix, where non-zero values represent edges
     """
-    W = np.where(weights >= t, weights, 0.0)
+    W = np.where(weights >= t, weights, 0.0)  # nonzero weight indicates edge
     return W
 
 
@@ -145,17 +186,21 @@ def laplacian_matrix(X, t):
     :param t: scalar, user-defined threshold for retaining weights
     :return: n x n matrix
     """
-    # calculate weight matrix W
+    # weight matrix
     weights = _calculate_weights_2(X)
     W = _construct_weight_matrix(weights, t)
+
+    # diagonal matrix
     D = _construct_diagonal_matrix(W)
+
+    # Laplacian
     L = _subtract_matrices(D, W)
 
     return L
 
 
 # tested
-def _helper_square_submatrix(L, idx):
+def _build_square_submatrix(L, idx):
     """
     Constructs square submatrix from the given Laplacian matrix. The process for submatrix ll and uu is exactly the
     same, only the list is different.
@@ -227,7 +272,7 @@ def _construct_ll(L, labeled):
                     i.e. [0,2] if instance 1 and 3 are labeled.
     :return: b x b matrix, where b is the number of labeled instances
     """
-    return _helper_square_submatrix(L, labeled)
+    return _build_square_submatrix(L, labeled)
 
 
 # tested
@@ -276,11 +321,11 @@ def _construct_uu(L, unlabeled):
                         i.e. [0,2] if instance 1 and 3 are unlabeled.
     :return: a x a matrix, where a is the number of unlabeled instances
     """
-    return _helper_square_submatrix(L, unlabeled)
+    return _build_square_submatrix(L, unlabeled)
 
 
 # tested
-def _helper_rectangular_submatrix(L, idx_i, idx_j):
+def _build_rectangular_submatrix(L, idx_i, idx_j):
     """
     Constructs rectangular submatrix from the given Laplacian matrix.
     Todo - Determine if sorting is really necessary.
@@ -363,7 +408,7 @@ def _construct_lu(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: b x a matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    return _helper_rectangular_submatrix(L, labeled, unlabeled)
+    return _build_rectangular_submatrix(L, labeled, unlabeled)
 
 
 # tested
@@ -417,7 +462,7 @@ def _construct_ul(L, labeled, unlabeled):
                         i.e. [0,2] if instances 1 and 3 are unlabeled.
     :return: a x b matrix, where b is the number of labeled instances and a is the number of unlabeled
     """
-    return _helper_rectangular_submatrix(L, unlabeled, labeled)
+    return _build_rectangular_submatrix(L, unlabeled, labeled)
 
 
 # tested
@@ -588,7 +633,7 @@ def expected_estimated_risk(f_u, uu_inv, k):
     f_u_plus_xk1 = _update_minimum_energy_solution(f_u, uu_inv, k, y_k=1)
     Rhat_f_plus_xk1 = _expected_risk(f_u_plus_xk1)
 
-    # estimated expected risk
+    # estimated expected risk of getting any label for point k
     f_k = f_u[k]
     Rhat_f_plus_xk = (1.0 - f_k) * Rhat_f_plus_xk0 + f_k * Rhat_f_plus_xk1
 
@@ -621,3 +666,115 @@ def zlg_query(f_u, uu_inv, num_labeled, num_samples):
             min_Rhat = Rhat
 
     return query_idx
+
+
+class ZLG:
+
+    # tested
+    def __init__(self, Xk, yk, Xu, yu):
+        """
+        Initializes instance and sets tracking for labeled and unlabeled samples.
+
+        :param Xk: labeled samples
+        :param yk: labels for labeled samples
+        :param Xu: unlabeled samples
+        :param yu: labels for unlabeled samples
+        """
+        self.Xk = Xk
+        self.yk = yk
+        self.Xu = Xu
+        self.yu = yu
+
+        # track indices of labeled and unlabeled
+        self.labeled = [i for i in range(len(yk))]
+        self.unlabeled = [i for i in range(len(yk), len(Xk) + len(Xu))]
+
+        # maintain predictions for unlabeled samples
+        self.fu = None
+
+    # tested
+    def _update_sets(self, query_idx):
+        """
+        Moves selected sample from arbitrary position in unlabeled data set to end of labeled data set.
+        :param query_idx:
+        :return: None
+        """
+        # add instance to end of labeled set
+        self.yk = np.append(self.yk, self.yu[query_idx])
+        self.Xk = np.append(self.Xk, [self.Xu[query_idx, :]], axis=0)
+
+        # remove instance from unlabeled set
+        self.yu = np.delete(self.yu, query_idx)
+        self.Xu = np.delete(self.Xu, query_idx, axis=0)
+
+    # tested
+    def _update_indexes(self):
+        """
+        Moves the first element in list of unlabeled indexes to end of the list of labeled indexes.
+        :return: None
+        """
+        self.labeled.append(self.unlabeled.pop(0))
+
+    # tested
+    def score(self):
+        """
+        Calculates the accuracy of predicted labels.
+        :return: float, calculated accuracy
+        """
+
+        y_pred = np.round(self.fu)
+        y_true = self.yu
+
+        wrong = (y_pred != y_true).sum()
+        error = wrong / len(y_true)
+        return 1.0 - error
+
+    # tested
+    def improve_predictions(self, t, budget):
+        """
+        Uses the sampling budget and user-defined similarity threshold to improve the predictions of unlabeled
+        samples in the data pool.
+
+        :param t: float, similarity threshold
+        :param budget: number of queries allowed to the oracle
+        :return: (list, list) Tuple representing (queried_indexes, scores) where
+                queried_indexes is the list of indexes queried each round (relative to the original X), and
+                scores is the accuracy of the predicted labels for remaining unlabeled data after labeling the
+                sample selected for that round.
+        """
+        # track original indices of unlabeled samples
+        original_indexes = copy.deepcopy(self.unlabeled)  # see "Note 1 - On the tracking of original labels"
+
+        # initialize components
+        X = np.concatenate((self.Xk, self.Xu), axis=0)
+        delta = laplacian_matrix(X, t)
+        self.fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
+
+        # use query budget to improve predictions
+        queried_indexes = []
+        scores = []
+        for query in range(budget):
+            # select unlabeled sample to query
+            query_idx = zlg_query(self.fu, delta_uu_inv, len(self.yk), len(X))
+
+            # record which sample was queried
+            original_idx = original_indexes[query_idx]  # get index relative to original X
+            queried_indexes.append(original_idx)
+            original_indexes.pop(query_idx)  # remove element from same relative position to preserve original indexing
+
+            # update fields
+            self._update_indexes()
+            self._update_sets(query_idx)  # move newly labeled sample to labeled set
+
+            # update Laplacian
+            X = np.concatenate((self.Xk, self.Xu), axis=0)
+            delta = laplacian_matrix(X, t)
+
+            # update label predictions given newly labeled sample
+            self.fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
+
+            # score predictions
+            y_pred = np.round(self.fu)
+            scores.append(self.score())
+
+        return queried_indexes, scores
