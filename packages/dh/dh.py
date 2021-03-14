@@ -167,7 +167,7 @@ def select_case_1(X, y_true, T, budget, batch_size):
         error.append(error_i)
 
     # after all iterations
-    # assign final labeling based on best pruning
+    # assign final labeling based on current pruning
     for j in range(len(P)):
         L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Tj the label L(j)
     return L, np.array(error)
@@ -245,19 +245,7 @@ def select_case_2(X, y_true, T, budget, batch_size):
         error.append(error_i)
 
     # after all iterations
-    # assign final labeling based on best pruning
+    # assign final labeling based on current pruning
     for j in range(len(P)):
         L = helper.assign_labels(L, P[j], P[j], T, num_samples)  # assign each leaf in Tj the label L(j)
     return L, np.array(error)
-
-
-P = np.array([4, 5])
-
-p1_LB = np.array([0.86, 0.34101021, 0.75, 0.44, 0.8737868,0.45964466, 0.67458712])
-
-p1_LB_P = p1_LB[P]
-wv = np.array([0.5, 0.5])
-
-p = wv * (1 - p1_LB_P)
-expected = p / sum(p)
-print(expected)
