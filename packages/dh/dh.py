@@ -1,3 +1,8 @@
+"""
+Implementation of DH, the hierarchical clustering active learning algorithm from the paper by Dasgupta and Hsu.
+See https://icml.cc/Conferences/2008/papers/324.pdf.
+"""
+
 import numpy as np
 import packages.dh.helper as helper
 import random
