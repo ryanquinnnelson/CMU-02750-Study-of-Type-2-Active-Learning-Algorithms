@@ -738,9 +738,9 @@ class ZLG:
             query_idx = zlg_query(fu, delta_uu_inv, len(self.yk), len(X))
 
             # record which sample was queried
-            original_idx = original_indexes[query_idx]  # get original index relative to X
+            original_idx = original_indexes[query_idx]  # get index relative to original X
             queried_indexes.append(original_idx)
-            original_indexes.pop(query_idx)  # remove element from same relative position
+            original_indexes.pop(query_idx)  # remove element from same relative position to preserve original indexing
 
             # update fields
             self._update_indexes()
