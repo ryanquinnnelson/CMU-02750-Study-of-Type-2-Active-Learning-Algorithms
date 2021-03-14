@@ -691,6 +691,9 @@ class ZLG:
         self.labeled = [i for i in range(len(yk))]
         self.unlabeled = [i for i in range(len(yk), len(Xk) + len(Xu))]
 
+        # maintain predictions for unlabeled samples
+        self.fu = None
+
     # tested
     def _update_sets(self, query_idx):
         # add instance to end of labeled set
@@ -728,14 +731,14 @@ class ZLG:
         # initialize components
         X = np.concatenate((self.Xk, self.Xu), axis=0)
         delta = laplacian_matrix(X, t)
-        fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
+        self.fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
 
         # use query budget to improve predictions
         queried_indexes = []
         scores = []
         for query in range(budget):
             # select unlabeled sample to query
-            query_idx = zlg_query(fu, delta_uu_inv, len(self.yk), len(X))
+            query_idx = zlg_query(self.fu, delta_uu_inv, len(self.yk), len(X))
 
             # record which sample was queried
             original_idx = original_indexes[query_idx]  # get index relative to original X
@@ -751,10 +754,10 @@ class ZLG:
             delta = laplacian_matrix(X, t)
 
             # update label predictions given newly labeled sample
-            fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
+            self.fu, delta_uu_inv = minimum_energy_solution(delta, self.labeled, self.unlabeled, self.yk)
 
             # score predictions
-            y_pred = np.round(fu)
+            y_pred = np.round(self.fu)
             scores.append(_score_model(y_pred, self.yu))
 
         return queried_indexes, scores

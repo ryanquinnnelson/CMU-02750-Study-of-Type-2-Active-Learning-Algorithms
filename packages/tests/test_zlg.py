@@ -398,6 +398,7 @@ def test__init__():
     np.testing.assert_array_equal(model.yu, yu)
     assert model.labeled == expected_labeled
     assert model.unlabeled == expected_unlabeled
+    assert model.fu is None
 
 
 def test__update_sets():
