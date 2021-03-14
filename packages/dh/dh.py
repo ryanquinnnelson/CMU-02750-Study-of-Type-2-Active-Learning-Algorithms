@@ -7,10 +7,11 @@ import random
 def _get_proportional_weights(P, T, num_samples):
     """
     Calculates wv = # leaves Tv / # leaves T.
-    :param P:
-    :param T:
-    :param num_samples:
-    :return:
+
+    :param P: array, represents current pruning
+    :param T: Tree data structure
+    :param num_samples: Number of samples in the data
+    :return: |P| x 1 vector, representing selection weights for each subtree v in P
     """
 
     if len(P) == 1:
@@ -29,10 +30,11 @@ def _get_proportional_weights(P, T, num_samples):
 def _proportional_selection(P, T, num_samples):
     """
     Select a node v from the pruning, proportional to the size of subtree rooted at v.
+
     :param P: array, represents current pruning
     :param T: Tree data structure
     :param num_samples: Number of samples in the data
-    :return:
+    :return: index of chosen subtree in P
     """
     # set weights wv for each node v in P
     wv = _get_proportional_weights(P, T, num_samples)
@@ -45,14 +47,20 @@ def _proportional_selection(P, T, num_samples):
 # tested
 def _get_confidence_adjusted_weights(P, T, num_samples, n, pHat1):
     """
-    Calculates p = wv(1 - p1_LB).
+    Calculates p = wv(1 - p1_LB)
 
-    :param P:
-    :param T:
-    :param num_samples:
-    :param n:
-    :param pHat1:
-    :return:
+    where
+    - wv is the proportional weight of subtree v in P
+    - p1_LB is the lower bound of predicted labels over tree T
+
+    :param P: array, represents current pruning
+    :param T: Tree data structure
+    :param num_samples: Number of samples in the data
+    :param n: V x 1 vector, where V is the number of nodes in T.
+            n[u] is the number of points sampled from node u
+    :param pHat1: V x 1 vector.
+            pHat1[u] is the empirical probability of label=1 in tree node u
+    :return: |P| x 1 vector, representing selection weights for each subtree v in P
     """
     if len(P) == 1:
 
@@ -82,11 +90,14 @@ def _confidence_adjusted_selection(P, T, num_samples, n, pHat1):
     """
     Select a node from P biasing towards choosing nodes in areas where the observed labels are less pure.
 
-
-    :param T:
-    :param num_samples:
-    :param pHat1:
-    :return:
+    :param P: array, represents current pruning
+    :param T: Tree data structure
+    :param num_samples: Number of samples in the data
+    :param n: V x 1 vector, where V is the number of nodes in T.
+            n[u] is the number of points sampled from node u
+    :param pHat1: V x 1 vector.
+            pHat1[u] is the empirical probability of label=1 in tree node u
+    :return: index of chosen subtree in P
     """
     p = _get_confidence_adjusted_weights(P, T, num_samples, n, pHat1)
     selected = np.random.choice(P, 1, p=p)
@@ -97,6 +108,7 @@ def _confidence_adjusted_selection(P, T, num_samples, n, pHat1):
 # ?? should be set instead of list
 def select_case_1(X, y_true, T, budget, batch_size):
     """
+    DH algorithm where we choose P proportional to the size of subtree rooted at each node.
 
     Todo - modularize to make more testable
 
@@ -175,6 +187,7 @@ def select_case_1(X, y_true, T, budget, batch_size):
 
 def select_case_2(X, y_true, T, budget, batch_size):
     """
+    DH algorithm where we choose P by biasing towards choosing nodes in areas where the observed labels are less pure.
 
     Todo - refactor to eliminate duplication of code from select_case_1
 
