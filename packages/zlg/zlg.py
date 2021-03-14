@@ -31,8 +31,8 @@ original X.
         query_idx = 1  // second unlabeled element is the 8th element in original X
         
 We need a way to determine the original index positions for each queried sample so we can track which unlabeled
-samples are selected from X by the ZLG algorithm. If we maintain a separate list of original indexes, we can preserve 
-the relationship to X. 
+samples are selected from the original X by the ZLG algorithm. If we maintain a separate list of original indexes, we 
+can preserve the relationship to the original X. 
         
         labeled             unlabeled                original
         [0,1,2,3,4]         [5,6,7,8]  indexes       [5,6,7,8]

@@ -112,30 +112,3 @@ increase purity overall. This process is repeated until the sample budget is use
 a single label to all unlabeled instances in that group (i.e. the majority label). All data in the 
 pool is now labeled, and the dataset can be used for supervised learning.*
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
