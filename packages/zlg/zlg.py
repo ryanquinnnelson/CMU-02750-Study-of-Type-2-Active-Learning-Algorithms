@@ -668,16 +668,6 @@ def zlg_query(f_u, uu_inv, num_labeled, num_samples):
     return query_idx
 
 
-# tested
-def _score_model(y_pred, y_true):
-    if y_pred.shape[0] != y_true.shape[0]:
-        raise ValueError('Arrays must be the same size to compare.')
-
-    wrong = (y_pred != y_true).sum()
-    error = wrong / len(y_true)
-    return 1.0 - error
-
-
 class ZLG:
 
     # tested
@@ -711,6 +701,16 @@ class ZLG:
         :return: None
         """
         self.labeled.append(self.unlabeled.pop(0))
+
+    # tested
+    def score(self):
+
+        y_pred = np.round(self.fu)
+        y_true = self.yu
+
+        wrong = (y_pred != y_true).sum()
+        error = wrong / len(y_true)
+        return 1.0 - error
 
     # tested
     def improve_predictions(self, t, budget):
@@ -758,6 +758,6 @@ class ZLG:
 
             # score predictions
             y_pred = np.round(self.fu)
-            scores.append(_score_model(y_pred, self.yu))
+            scores.append(self.score())
 
         return queried_indexes, scores

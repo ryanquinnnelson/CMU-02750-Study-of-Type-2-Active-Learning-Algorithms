@@ -371,12 +371,13 @@ def test_zlg_query():
     assert actual == expected
 
 
-def test__score_model():
-    f_u = np.array([0.51, 0.7, 0.1, 0.2])
-    y_true = np.array([1, 0, 0, 0])
+def test_score():
+    fu = np.array([0.51, 0.7, 0.1, 0.2])
+    yu = np.array([1, 0, 0, 0])
 
-    y_pred = np.round(f_u)
-    assert zlg._score_model(y_pred, y_true) == 3 / 4
+    model = zlg.ZLG([],[],[],yu)
+    model.fu = fu
+    assert model.score() == 3 / 4
 
 
 def test__init__():
