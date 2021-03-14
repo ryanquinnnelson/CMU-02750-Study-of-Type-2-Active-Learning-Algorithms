@@ -3,14 +3,7 @@ Code provided to help implementation of DH, modified to be modular and testable.
 """
 
 import numpy as np
-
 from scipy.cluster.hierarchy import linkage
-
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-import torch
-from torch.utils.data import DataLoader, TensorDataset
-from torch import optim
 
 
 # tested
@@ -74,96 +67,6 @@ def generate_T(X):
     return T
 
 
-def get_classifier(choice, X=None, y=None, seed=None):
-    """
-    Generates a classifier of the specified choice.
-
-    :param choice: String representing the desired classifier
-    :param X: Used to define Neural Network
-    :param y: Used to define Neural Network
-    :param seed: Used to define Random Forest, Gradient Boosting, Neural Network
-    :return: initialized model
-    """
-    model = None
-
-    if choice == 'Logistic Regression':
-        lr = LogisticRegression()
-        model = lr
-
-    elif choice == 'Random Forest':
-        N_estimator_rf = 20
-        MAX_depth_rf = 6
-        rf = RandomForestClassifier(n_estimators=N_estimator_rf,
-                                    max_depth=MAX_depth_rf,
-                                    random_state=seed)
-        model = rf
-
-    elif choice == 'Gradient Boosting Decision Tree':
-        N_estimator_gbdt = 20
-        gbdt_max_depth = 6
-        gbdt = GradientBoostingClassifier(n_estimators=N_estimator_gbdt,
-                                          learning_rate=0.1,
-                                          max_depth=gbdt_max_depth,
-                                          random_state=seed)
-        model = gbdt
-
-    elif choice == 'Neural Net':
-
-        # 3-layer fully connected neural network
-        torch.manual_seed(seed)
-
-        class NNClassifier(object):
-            def __init__(self,
-                         feature_n,
-                         class_n,
-                         hidden_n=30,
-                         learning_rate=4e-3,
-                         weight_decay=1e-5):
-                self.model = torch.nn.Sequential(torch.nn.Linear(feature_n, hidden_n),
-                                                 torch.nn.SiLU(),
-                                                 torch.nn.Linear(hidden_n, hidden_n),
-                                                 torch.nn.SiLU(),
-                                                 torch.nn.Linear(hidden_n, class_n))
-                self.lr = learning_rate
-                self.wd = weight_decay
-
-            def fit(self, X_train, y_train, epoches=300, batch_size=50):
-                X_t = torch.from_numpy(X_train.astype(np.float32))
-                y_t = torch.from_numpy(y_train.astype(np.int64))
-                dataset = TensorDataset(X_t, y_t)
-                loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-                loss_fn = torch.nn.CrossEntropyLoss(reduction='mean')
-                optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.wd)
-                loss_record = 0.0
-                report_epoch = 50
-                for epoch_i in range(epoches):
-                    for batch in loader:
-                        x_batch, y_batch = batch
-                        y_pred = self.model(x_batch)
-                        loss = loss_fn(y_pred, y_batch)
-                        self.model.zero_grad()
-                        loss.backward()
-                        optimizer.step()
-                        loss_record += loss.item()
-                    if epoch_i % report_epoch == report_epoch - 1:
-                        # print("[%d|%d] epoch loss:%.2f" % (epoch_i + 1, epoches, loss_record / report_epoch))
-                        loss_record = 0.0
-                    if epoch_i >= epoches:
-                        break
-                return self
-
-            def score(self, X_test, y_test):
-                X_test_tensor = torch.from_numpy(X_test.astype(np.float32))
-                y_pred_test = self.model(X_test_tensor)
-                y_output = torch.argmax(y_pred_test, axis=1).numpy()
-                return (y_output == y_test).mean()
-
-        nn = NNClassifier(feature_n=X.shape[1], class_n=len(np.unique(y)))
-        model = nn
-
-    return model
-
-
 # tested
 def compute_error(y_pred, y_true):
     """
@@ -215,6 +118,8 @@ def assign_labels(L, u, v, T, num_samples):
 def get_leaves(leaves, v, T, num_samples):
     """
     Obtains indexes of all leaf nodes for the subtree Tv rooted at v, using recursion.
+
+    Todo - rewrite to avoid needing to provide empty list for leaves the first time
 
     :param leaves: list of indexes representing previously found leaves
     :param v: root node of subtree Tv
